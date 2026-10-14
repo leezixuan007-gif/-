@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <!-- 1. Viewport 禁用縮放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>聖經希伯來文初階 — 單字記憶卡</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #2980b9;
+            --bg: #f5f7fa;
+            --card-bg: #ffffff;
+            --text: #333333;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+        }
+
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+
+        /* 2. 允許頁面正常滾動，但禁用雙擊縮放手勢 */
+        html, body { 
+            background-color: var(--bg); 
+            color: var(--text); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 20px;
+            touch-action: manipulation; /* 保留滾動，禁止雙擊縮放 */
+        }
+        
+        header { text-align: center; margin-bottom: 20px; }
+        h1 { color: var(--primary); margin-bottom: 5px; font-size: 1.8rem; }
+        p.subtitle { color: #666; font-size: 0.9rem; }
+
+        /* 控制面板 */
+        .controls-panel { background: white; padding: 18px 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 100%; max-width: 520px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
+        .chapter-header { display: flex; justify-content: space-between; align-items: center; }
+        .chapter-title { font-size: 0.95rem; font-weight: bold; color: var(--primary); }
+        
+        .mode-toggle { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--accent); font-weight: 600; cursor: pointer; user-select: none; }
+        .mode-toggle input { cursor: pointer; }
+
+        .batch-btn { font-size: 0.8rem; color: var(--accent); background: none; border: none; cursor: pointer; text-decoration: underline; }
+
+        .chapter-select-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .ch-btn { padding: 6px 12px; font-size: 0.85rem; border: 1px solid #cbd5e1; background: white; border-radius: 8px; cursor: pointer; transition: all 0.2s; user-select: none; touch-action: manipulation; }
+        .ch-btn:hover { border-color: var(--accent); }
+        .ch-btn.selected { background: var(--accent); color: white; border-color: var(--accent); font-weight: bold; }
+
+        .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
+        .tool-btn { padding: 6px 12px; font-size: 0.85rem; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; touch-action: manipulation; }
+        .tool-btn.active { background: #fef3c7; border-color: #f59e0b; color: #92400e; font-weight: bold; }
+        .tool-btn.danger { color: #c0392b; border-color: #f5c6cb; }
+        .tool-btn.danger:hover { background: #f8d7da; }
+
+        /* 進度與統計資訊 */
+        .status-info { display: flex; justify-content: space-between; width: 100%; max-width: 420px; font-size: 0.85rem; color: #64748b; margin-bottom: 8px; font-weight: 500; }
+
+        /* 卡片區域 */
+        .card-container { perspective: 1000px; width: 100%; max-width: 420px; height: 260px; margin-bottom: 20px; cursor: pointer; user-select: none; touch-action: manipulation; }
+        .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); background: var(--card-bg); }
+        .card.flipped { transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 24px; text-align: center; border-radius: 16px; border: 1px solid #e2e8f0; }
+        
+        .card-front { background: #ffffff; }
+        .hebrew-text { font-size: 3.2rem; font-family: 'Ezra SIL', 'SBL Hebrew', 'Times New Roman', serif; direction: rtl; color: #0f172a; margin-bottom: 12px; line-height: 1.2; }
+        .chapter-tag { position: absolute; top: 16px; left: 16px; font-size: 0.75rem; background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 12px; font-weight: 600; }
+        
+        .card-back { background: #fafafa; transform: rotateY(180deg); }
+        .meaning-text { font-size: 1.5rem; color: var(--primary); font-weight: bold; line-height: 1.4; margin-bottom: 10px; }
+        .hebrew-text-sub { font-size: 1.8rem; font-family: 'Ezra SIL', 'SBL Hebrew', 'Times New Roman', serif; direction: rtl; color: #64748b; }
+
+        /* 按鈕組 */
+        .action-btns { display: flex; gap: 12px; width: 100%; max-width: 420px; }
+        .btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 0.95rem; touch-action: manipulation; }
+        .btn-prev, .btn-next { background: #e2e8f0; color: #334155; }
+        .btn-prev:hover, .btn-next:hover { background: #cbd5e1; }
+        .btn-mark { background: #fffbebf7; color: #b45309; border: 1px solid #fde68a; }
+        .btn-mark.active { background: #fef3c7; color: #92400e; font-weight: bold; border-color: #f59e0b; }
+
+        .progress-bar { width: 100%; max-width: 420px; height: 6px; background: #e2e8f0; border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>聖經希伯來文初階</h1>
+        <p class="subtitle">單字卡記憶與多章節合併複習</p>
+    </header>
+
+    <!-- 控制面板 -->
+    <div class="controls-panel">
+        <div class="chapter-header">
+            <span class="chapter-title">選擇複習章節：</span>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <label class="mode-toggle">
+                    <input type="checkbox" id="multiSelectToggle" onchange="toggleMultiSelectMode(this.checked)"> 多選章節
+                </label>
+                <div id="batchControl" style="display:none;">
+                    <button class="batch-btn" onclick="selectAllChapters(true)">全選</button>
+                    <span style="color:#ccc;">|</span>
+                    <button class="batch-btn" onclick="selectAllChapters(false)">清空</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chapter-select-group" id="chapterGroup">
+            <!-- 由 JavaScript 動態生成章節按鈕 -->
+        </div>
+
+        <div class="toolbar">
+            <button class="tool-btn" id="reviewOnlyBtn" onclick="toggleReviewOnly()">⭐ 僅看標記單字</button>
+            <button class="tool-btn" onclick="shuffleCurrentList()">🎲 隨機打亂</button>
+            <button class="tool-btn danger" onclick="clearAllMarks()">🗑️ 清空所有標記</button>
+        </div>
+    </div>
+
+    <!-- 狀態與進度 -->
+    <div class="status-info">
+        <span id="currentScopeText">範圍：第 3 章</span>
+        <span id="countText">1 / 20</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+    <!-- 單字卡區域 -->
+    <div class="card-container" id="cardContainer" onclick="flipCard()">
+        <div class="card" id="card">
+            <div class="card-face card-front">
+                <span class="chapter-tag" id="cardCh">Ch.3</span>
+                <div class="hebrew-text" id="hebrewFront">אָדָם</div>
+                <span style="font-size:0.8rem; color:#94a3b8; position:absolute; bottom:16px;">(點擊卡片查看中文)</span>
+            </div>
+            <div class="card-face card-back">
+                <span class="chapter-tag" id="cardChBack">Ch.3</span>
+                <div class="meaning-text" id="meaningBack">人、亞當</div>
+                <div class="hebrew-text-sub" id="hebrewBack">אָדָם</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作按鈕 -->
+    <div class="action-btns">
+        <button class="btn btn-prev" onclick="prevCard()">上一張</button>
+        <button class="btn btn-mark" id="markBtn" onclick="toggleCurrentMark()">☆ 標記</button>
+        <button class="btn btn-next" onclick="nextCard()">下一張</button>
+    </div>
+
+    <script>
+        // JS 防雙擊縮放手勢處置
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function (event) {
+            const now = (new Date()).getTime();
+            if (now - lastTouchEnd <= 300) {
+                event.preventDefault();
+            }
+            lastTouchEnd = now;
+        }, false);
+
+        const chapterList = [3, 4, 5, 6, 7, 8, 9, 19, 20, 21, 22, 23, 24, 25, 26, 27];
+
+        // 資料庫
+        const allVocabData = [
+            // Ch.3
+            { ch: 3, h: "אָדָם", m: "人、亞當" },
+            { ch: 3, h: "אֶרֶץ", m: "世界、地（陰性）" },
+            { ch: 3, h: "אֱלֹהִים", m: "上帝、神" },
+            { ch: 3, h: "אָב", m: "父親、祖先" },
+            { ch: 3, h: "אֵל", m: "上帝、神" },
+            { ch: 3, h: "בֵּן", m: "兒子" },
+            { ch: 3, h: "בַּיִת", m: "房子、家人" },
+            { ch: 3, h: "דָּבָר", m: "話、事、物" },
+            { ch: 3, h: "יוֹם", m: "日" },
+            { ch: 3, h: "יִשְׂרָאֵל", m: "以色列" },
+            { ch: 3, h: "יְרוּשָׁלַם / יְרוּשָׁלַיִם", m: "耶路撒冷" },
+            { ch: 3, h: "יְהוָה", m: "雅偉、主" },
+            { ch: 3, h: "מִצְרַיִם", m: "埃及" },
+            { ch: 3, h: "מֹשֶׁה", m: "摩西" },
+            { ch: 3, h: "מֶלֶךְ", m: "王" },
+            { ch: 3, h: "סוּס", m: "馬" },
+            { ch: 3, h: "עֶבֶד", m: "僕人" },
+            { ch: 3, h: "פַּרְעֹה", m: "法老" },
+            { ch: 3, h: "שָׁנָה", m: "年" },
+            { ch: 3, h: "שֵׁם", m: "名字" },
+            // Ch.4
+            { ch: 4, h: "אָדוֹן", m: "主、主人（אֲדֹנָי：上主）" },
+            { ch: 4, h: "אָח", m: "兄弟（אַחִים：不規則複數）" },
+            { ch: 4, h: "אִישׁ", m: "男人、丈夫（אֲנָשִׁים：不規則複數）" },
+            { ch: 4, h: "אִשָּׁה", m: "女人、妻子（נָשִׁים：不規則複數）" },
+            { ch: 4, h: "בַּת", m: "女兒（בָּנוֹת：不規則複數）" },
+            { ch: 4, h: "גּוֹי", m: "人民、國家" },
+            { ch: 4, h: "דֶּרֶךְ", m: "道路、路徑（陽性/陰性）" },
+            { ch: 4, h: "הַר", m: "山、山脈（הָרִים：複數）" },
+            { ch: 4, h: "כֹּהֵן", m: "祭司" },
+            { ch: 4, h: "לֵב / לֵבָב", m: "心" },
+            { ch: 4, h: "מַיִם", m: "水" },
+            { ch: 4, h: "נֶפֶשׁ", m: "生命、靈魂、脖子、喉嚨（陰性）" },
+            { ch: 4, h: "נָבִיא", m: "先知" },
+            { ch: 4, h: "סֵפֶר", m: "書、書卷" },
+            { ch: 4, h: "עַיִן", m: "眼睛、泉源（עֵינַיִם：雙數；陰性）" },
+            { ch: 4, h: "עִיר", m: "城市（עָרִים：不規則複數；陰性）" },
+            { ch: 4, h: "צָבָא", m: "軍隊、部隊、戰爭（צְבָאוֹת：複數）" },
+            { ch: 4, h: "קוֹל", m: "聲音、聲響" },
+            { ch: 4, h: "רֹאשׁ", m: "頭、首領、頂部" },
+            { ch: 4, h: "תּוֹרָה", m: "法律、訓誨、妥拉" },
+            // Ch.5
+            { ch: 5, h: "אֵשׁ", m: "火（陰性）" },
+            { ch: 5, h: "הֵיכָל", m: "王宮、殿" },
+            { ch: 5, h: "וְ", m: "和、但、也、甚至" },
+            { ch: 5, h: "זָהָב", m: "金" },
+            { ch: 5, h: "חֶרֶב", m: "劍（陰性）" },
+            { ch: 5, h: "חַי / חַיִּים", m: "（名詞）生命、終身；（形容詞）活的" },
+            { ch: 5, h: "יֶלֶד", m: "男童、男孩" },
+            { ch: 5, h: "יָם", m: "海、西" },
+            { ch: 5, h: "כֶּסֶף", m: "銀" },
+            { ch: 5, h: "כֹּה", m: "這樣、如此" },
+            { ch: 5, h: "מָקוֹם", m: "地方" },
+            { ch: 5, h: "מִשְׁפָּט", m: "審判、傳統、法律、習俗、規章" },
+            { ch: 5, h: "מִזְבֵּחַ", m: "祭壇" },
+            { ch: 5, h: "נְאֻם", m: "言詞、宣言、啟示" },
+            { ch: 5, h: "עוֹלָם", m: "永遠、永恆" },
+            { ch: 5, h: "עָנָן", m: "雲" },
+            { ch: 5, h: "רוּחַ", m: "風、靈、氣息（通常是陰性）" },
+            { ch: 5, h: "שַׂר", m: "官長、首領、王子" },
+            { ch: 5, h: "שַׁעַר", m: "城門" },
+            { ch: 5, h: "שָׁמַיִם", m: "天、天空" },
+            // Ch.6
+            { ch: 6, h: "אַחַר / אַחֲרֵי", m: "後面、之後" },
+            { ch: 6, h: "אֵת", m: "與" },
+            { ch: 6, h: "אֵת / אֶת-", m: "特定直接受詞記號（不需翻譯）" },
+            { ch: 6, h: "אֶל / אֶל-", m: "對著、向著" },
+            { ch: 6, h: "בֵּין / וּבֵין", m: "在……之間" },
+            { ch: 6, h: "בְּ", m: "在……之中、對著、藉由、同" },
+            { ch: 6, h: "בְּתוֹךְ", m: "在……之間、中間；（名詞）當中、中間" },
+            { ch: 6, h: "חָכְמָה", m: "智慧、經驗、精明" },
+            { ch: 6, h: "כְּ", m: "像、如同、按照" },
+            { ch: 6, h: "כֹּל / כָּל-", m: "所有的、各自、每個、完整的" },
+            { ch: 6, h: "לִפְנֵי", m: "在……面前" },
+            { ch: 6, h: "לְ", m: "給、向著、為了" },
+            { ch: 6, h: "לְמַעַן", m: "為了……緣故、因為、為了" },
+            { ch: 6, h: "מִן / מִן-", m: "從" },
+            { ch: 6, h: "מַעַל / מִמַּעַל", m: "在……以上" },
+            { ch: 6, h: "מִצְוָה", m: "命令、誡命（מִצְוֹת：不規則複數）" },
+            { ch: 6, h: "עַד", m: "直到、當……的時候" },
+            { ch: 6, h: "עַל", m: "在……上面、在上、因為、按照" },
+            { ch: 6, h: "עַל-דְּבַר", m: "因為、為了" },
+            { ch: 6, h: "עִם", m: "同……一起" },
+            { ch: 6, h: "פֶּה", m: "嘴巴、開口" },
+            { ch: 6, h: "שָׂדֶה", m: "田野、草場" },
+            { ch: 6, h: "תַּחַת", m: "在……之下、下面、代替" },
+            // Ch.7
+            { ch: 7, h: "אֶחָד", m: "一" },
+            { ch: 7, h: "גָּדוֹל", m: "大、偉大" },
+            { ch: 7, h: "דַּל", m: "貧窮" },
+            { ch: 7, h: "זָקֵן", m: "（形容詞）老；（名詞）老人、長老" },
+            { ch: 7, h: "חָכָם", m: "有智慧的" },
+            { ch: 7, h: "טוֹב", m: "好" },
+            { ch: 7, h: "יָפֶה", m: "漂亮" },
+            { ch: 7, h: "יָשָׁר", m: "直、正義、正直、公正" },
+            { ch: 7, h: "כֵּן / עַל-כֵּן / לָכֵן", m: "所以、這樣、因此" },
+            { ch: 7, h: "מְאֹד", m: "很、非常地" },
+            { ch: 7, h: "מְעַט", m: "幾個、少" },
+            { ch: 7, h: "עַתָּה", m: "現在、最後、畢竟" },
+            { ch: 7, h: "צַדִּיק", m: "公義的、公正的、無罪的" },
+            { ch: 7, h: "קֹדֶשׁ", m: "（名詞）聖潔、聖物" },
+            { ch: 7, h: "קָדוֹשׁ", m: "（形容詞）聖潔的" },
+            { ch: 7, h: "קָטֹן", m: "小、不重要、年輕" },
+            { ch: 7, h: "קָרוֹב", m: "近、臨近" },
+            { ch: 7, h: "קָשֶׁה", m: "困難的、堅硬的、嚴重的" },
+            { ch: 7, h: "רָחוֹק", m: "遠的、遙遠的" },
+            { ch: 7, h: "רַב", m: "許多、好多" },
+            { ch: 7, h: "רַע", m: "惡的、壞的" },
+            { ch: 7, h: "רָשָׁע", m: "惡的、違法的" },
+            { ch: 7, h: "שִׁיר", m: "歌" },
+            // Ch.8
+            { ch: 8, h: "אֹהֶל", m: "帳棚" },
+            { ch: 8, h: "אַחֵר", m: "另一個、外邦的" },
+            { ch: 8, h: "אֵיךְ / אֵיכָה", m: "如何？" },
+            { ch: 8, h: "אֶלֶף", m: "千" },
+            { ch: 8, h: "אֲשֶׁר / כַּאֲשֶׁר", m: "關係代名詞" },
+            { ch: 8, h: "בְּהֵמָה", m: "牛、動物" },
+            { ch: 8, h: "גַּם", m: "也、的確" },
+            { ch: 8, h: "דָּם", m: "血" },
+            { ch: 8, h: "הֲ", m: "疑問質詞" },
+            { ch: 8, h: "טָהוֹר", m: "乾淨、純潔" },
+            { ch: 8, h: "כִּי / כִּי-אִם", m: "因為、為了；（反義）但是，除了；（強調）確實地 / 但是，除了、只有" },
+            { ch: 8, h: "כְּסִיל", m: "愚笨、遲鈍" },
+            { ch: 8, h: "לָמָה / מָה", m: "為什麼？ / 什麼？如何？" },
+            { ch: 8, h: "מַדּוּעַ", m: "為何？為什麼？" },
+            { ch: 8, h: "מִי", m: "誰？" },
+            { ch: 8, h: "עָנִי", m: "貧窮、受苦" },
+            { ch: 8, h: "שֶׁמֶן", m: "油" },
+            { ch: 8, h: "שֹׁפֵט", m: "審判官" },
+            // Ch.9
+            { ch: 9, h: "אוֹ", m: "或" },
+            { ch: 9, h: "אַיִן / אֵין", m: "無、沒有" },
+            { ch: 9, h: "אַף", m: "鼻孔、鼻子、怒氣；（雙數：אַפַּיִם）" },
+            { ch: 9, h: "בֹּקֶר", m: "早晨" },
+            { ch: 9, h: "בָּקָר", m: "牛、牲畜、家畜" },
+            { ch: 9, h: "בְּרָכָה", m: "祝福、禮物" },
+            { ch: 9, h: "הֵן", m: "如果、看啊！" },
+            { ch: 9, h: "הִנֵּה", m: "看啊！" },
+            { ch: 9, h: "חַטָּאת", m: "罪、贖罪祭（陰性）" },
+            { ch: 9, h: "יֵשׁ", m: "有" },
+            { ch: 9, h: "כָּבוֹד", m: "榮耀、尊重" },
+            { ch: 9, h: "כְּלִי", m: "器皿、武器" },
+            { ch: 9, h: "לֶחֶם", m: "麵包、食物" },
+            { ch: 9, h: "לְבַד", m: "副詞：單獨、獨自；介系詞：除……之外" },
+            { ch: 9, h: "מִשְׁפָּחָה", m: "家族、親族" },
+            { ch: 9, h: "מִלְחָמָה", m: "戰爭、爭鬥" },
+            { ch: 9, h: "סָבִיב", m: "環繞、在……四周、鄰近" },
+            { ch: 9, h: "עַם", m: "人民" },
+            { ch: 9, h: "עֵץ", m: "樹、木材" },
+            // Ch.19
+            { ch: 19, h: "בָּטַח", m: "依靠、信任" },
+            { ch: 19, h: "בָּכָה", m: "哭泣、哭（因悲哀或大喜）" },
+            { ch: 19, h: "לָבַשׁ", m: "穿上、穿上衣服" },
+            { ch: 19, h: "שָׂרַף", m: "燒、燒（盡）；（名詞：שָׂרָף 火蛇）" },
+            { ch: 19, h: "שָׁלֵם", m: "作完整、作完全" },
+            { ch: 19, h: "דּוֹר", m: "世代" },
+            { ch: 19, h: "חוּץ", m: "外面、街道" },
+            { ch: 19, h: "מְלָאכָה", m: "工作、職業、服務" },
+            { ch: 19, h: "פַּר", m: "公牛" },
+            { ch: 19, h: "פֶּתַח", m: "大門、口、入口" },
+            { ch: 19, h: "רֹב", m: "許多、豐盛" },
+            { ch: 19, h: "שָׂפָה", m: "嘴唇、語言、岸、堤" },
+            // Ch.20
+            { ch: 20, h: "אָחַז", m: "抓住" },
+            { ch: 20, h: "טָמֵא", m: "不潔淨" },
+            { ch: 20, h: "יָצַר", m: "形成、使成形、培養" },
+            { ch: 20, h: "נוּס", m: "逃走" },
+            { ch: 20, h: "נָגַע", m: "碰觸、伸出、擊打" },
+            { ch: 20, h: "סָבַב", m: "環繞" },
+            { ch: 20, h: "סָפַר", m: "計算、數算" },
+            { ch: 20, h: "שָׁמַח", m: "喜樂" },
+            { ch: 20, h: "שָׁבַר", m: "破壞、破裂、破碎" },
+            { ch: 20, h: "יַחַד / יַחְדָּו", m: "一起、同時" },
+            { ch: 20, h: "יַיִן", m: "酒" },
+            { ch: 20, h: "עֲבֹדָה / עֲבוֹדָה", m: "工作、勞力、服務" },
+            { ch: 20, h: "עֵדָה", m: "會眾" },
+            { ch: 20, h: "בִּלְתִּי / לְבִלְתִּי", m: "不、為了不" },
+            // Ch.21
+            { ch: 21, h: "זָבַח", m: "宰殺、獻祭" },
+            { ch: 21, h: "חָנָה", m: "紮營、圍城" },
+            { ch: 21, h: "נוּחַ", m: "休息、定居" },
+            { ch: 21, h: "נָסַע", m: "出發、拔出" },
+            { ch: 21, h: "פָּנָה", m: "轉、轉過臉" },
+            { ch: 21, h: "פָּתַח", m: "開" },
+            { ch: 21, h: "רָדַף", m: "追趕、迫害" },
+            { ch: 21, h: "שָׂנֵא", m: "憎恨" },
+            { ch: 21, h: "שָׁאַר", m: "留下、存活" },
+            { ch: 21, h: "בָּמָה", m: "高處、山陵邱壇" },
+            { ch: 21, h: "חֻקָּה / חֻקּוֹת", m: "律例、命令（複數）" },
+            { ch: 21, h: "יָמִין", m: "右、南方（陰性）" },
+            { ch: 21, h: "מִשְׁכָּן", m: "居所、帳幕" },
+            { ch: 21, h: "נַחַל", m: "河流、溪流" },
+            { ch: 21, h: "רָעָב", m: "饑荒、飢餓；（形容詞）飢餓的" },
+            // Ch.22
+            { ch: 22, h: "אָרַר", m: "咒詛" },
+            { ch: 22, h: "בּוֹשׁ", m: "羞愧" },
+            { ch: 22, h: "גָּדַל", m: "長大（成為）強壯、偉大、富有或重要" },
+            { ch: 22, h: "חָשַׁב", m: "計算、認為、評價、思想" },
+            { ch: 22, h: "יָטַב", m: "好" },
+            { ch: 22, h: "לָכַד", m: "捉、擄獲" },
+            { ch: 22, h: "נָגַשׁ", m: "臨近、接近" },
+            { ch: 22, h: "קָבַץ", m: "集合" },
+            { ch: 22, h: "קָבַר", m: "埋葬" },
+            { ch: 22, h: "שָׁכַן", m: "居住、定居、宿營" },
+            { ch: 22, h: "שָׁפַךְ", m: "倒出、流（血）" },
+            { ch: 22, h: "חוֹמָה", m: "城牆" },
+            { ch: 22, h: "חֹק", m: "律例、規定、典章" },
+            { ch: 22, h: "כֶּבֶשׂ", m: "公羊羔、羊" },
+            // Ch.23
+            { ch: 23, h: "אוֹר", m: "光、日光" },
+            { ch: 23, h: "בְּכֹר / בְּכוֹר", m: "長子" },
+            { ch: 23, h: "חֵמָה", m: "熱氣、憤怒" },
+            { ch: 23, h: "חֲצִי", m: "一半、中間" },
+            { ch: 23, h: "כֹּחַ", m: "力量、能力" },
+            { ch: 23, h: "נְחֹשֶׁת", m: "銅、青銅" },
+            { ch: 23, h: "נָשִׁיא", m: "首領、王子" },
+            { ch: 23, h: "עֶרֶב", m: "晚上、日落" },
+            { ch: 23, h: "עֶצֶם", m: "骨頭" },
+            { ch: 23, h: "פְּרִי", m: "果實、後代" },
+            { ch: 23, h: "קָהָל", m: "大會、會眾" },
+            { ch: 23, h: "רֶכֶב", m: "戰車、駕戰車的" },
+            { ch: 23, h: "לָשׁוֹן", m: "舌頭、語言" },
+            { ch: 23, h: "תּוֹעֵבָה", m: "可憎之物" },
+            // Ch.24
+            { ch: 24, h: "אָמַן", m: "（Niphal）穩定、堅固、信賴、守信" },
+            { ch: 24, h: "יָשַׁע", m: "（Niphal）被救、受援助" },
+            { ch: 24, h: "יָתַר", m: "（Niphal）被遺留、保持" },
+            { ch: 24, h: "כּוּן", m: "（Niphal）堅固、建造、預備" },
+            { ch: 24, h: "לָחַם", m: "（Niphal）爭鬥" },
+            { ch: 24, h: "מָלַט", m: "（Niphal）逃脫" },
+            { ch: 24, h: "נָחַם", m: "（Niphal）抱歉、悔改、有憐憫" },
+            { ch: 24, h: "נָכָה", m: "（Niphal）被擊打" },
+            { ch: 24, h: "נָצַב", m: "（Niphal）站崗、被安置" },
+            { ch: 24, h: "נָצַל", m: "（Niphal）被拯救" },
+            { ch: 24, h: "סָתַר", m: "（Niphal）隱藏、躲藏自己" },
+            { ch: 24, h: "פָּלָא", m: "（Niphal）非常驚人、令人驚奇" },
+            { ch: 24, h: "רוּץ", m: "跑" },
+            { ch: 24, h: "שָׁחַת", m: "（Piel, Hiphil）被敗壞、破壞、毀滅" },
+            { ch: 24, h: "שָׁמַד", m: "（Niphal）被毀滅、滅絕" },
+            // Ch.25
+            { ch: 25, h: "הָפַךְ", m: "翻轉、推翻" },
+            { ch: 25, h: "זָנָה", m: "行淫、作妓女" },
+            { ch: 25, h: "חָרָה", m: "憤怒、發怒" },
+            { ch: 25, h: "רָעַע", m: "作惡、行邪惡" },
+            { ch: 25, h: "שָׁבַע", m: "滿意、被滿足" },
+            { ch: 25, h: "שָׁכַח", m: "忘記" },
+            { ch: 25, h: "שָׁמֵם", m: "被拋棄、使荒蕪" },
+            { ch: 25, h: "זָכָר", m: "男人、男性" },
+            { ch: 25, h: "חֹשֶׁךְ", m: "黑暗" },
+            { ch: 25, h: "מִגְרָשׁ", m: "草場、牧場" },
+            { ch: 25, h: "מַמְלָכָה", m: "王國" },
+            { ch: 25, h: "נָהָר", m: "河、溪流" },
+            { ch: 25, h: "צֶדֶק", m: "公義、公正、正直" },
+            { ch: 25, h: "רֹעֶה", m: "牧人" },
+            // Ch.26
+            { ch: 26, h: "בָּקַשׁ", m: "（Piel）尋找、發現、要求" },
+            { ch: 26, h: "דָּבַר", m: "（Piel）說話" },
+            { ch: 26, h: "הָלַל", m: "（Piel）讚美" },
+            { ch: 26, h: "יָדָה", m: "（Hiphil）讚美、稱謝" },
+            { ch: 26, h: "כָּסָה", m: "遮蓋、隱藏；（Piel）遮蓋、穿衣" },
+            { ch: 26, h: "מָהַר", m: "（Piel）加速、急忙" },
+            { ch: 26, h: "נָבָא", m: "（Niphal）預言" },
+            { ch: 26, h: "נָבַט", m: "（Piel）注視、注意" },
+            { ch: 26, h: "סָגַר", m: "封閉、關閉" },
+            { ch: 26, h: "צָוָה", m: "（Piel）命令" },
+            { ch: 26, h: "קָטַר", m: "（Piel）獻祭成煙上升、獻燔祭" },
+            { ch: 26, h: "שִׁיר", m: "歌唱" },
+            { ch: 26, h: "שִׁית", m: "設置、安置、放置" },
+            { ch: 26, h: "שָׁרַת", m: "（Piel）照料、侍候、事奉神" },
+            // Ch.27
+            { ch: 27, h: "גּוּר", m: "居留、寄居" },
+            { ch: 27, h: "יָעַץ", m: "勸告、建議、計劃、決定" },
+            { ch: 27, h: "לָמַד", m: "學；（Piel）教" },
+            { ch: 27, h: "מָשַׁל", m: "統治、管轄、治理" },
+            { ch: 27, h: "מָכַר", m: "賣" },
+            { ch: 27, h: "עָזַר", m: "幫助、協助" },
+            { ch: 27, h: "עָנָה", m: "（Piel）壓迫、羞辱、侵犯、折磨" },
+            { ch: 27, h: "קָלַל", m: "輕、小、快；（Niphal, Piel）宣告為被咒詛的" },
+            { ch: 27, h: "קָנָה", m: "得、買" },
+            { ch: 27, h: "רָכַב", m: "騎" },
+            { ch: 27, h: "שָׁחַט", m: "宰、殺" },
+            { ch: 27, h: "אָחוֹת", m: "姐妹、所愛的（陰性）" },
+            { ch: 27, h: "כָּנָף", m: "翅膀、角落、邊緣" },
+            { ch: 27, h: "עַמּוּד", m: "柱子、圓柱" },
+            { ch: 27, h: "שֶׁקֶר", m: "謊話、虛假、欺騙" }
+        ];
+
+        // 預設狀態
+        let selectedChapters = [3];
+        let isMultiSelect = false;
+        let activeList = [];
+        let currentIndex = 0;
+        let isFlipped = false;
+        let reviewOnly = false;
+        let markedWords = JSON.parse(localStorage.getItem('hebrew_marked_words') || '[]');
+
+        function initApp() {
+            renderChapterButtons();
+            filterData();
+        }
+
+        function renderChapterButtons() {
+            const container = document.getElementById('chapterGroup');
+            container.innerHTML = '';
+            chapterList.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = `ch-btn ${selectedChapters.includes(c) ? 'selected' : ''}`;
+                btn.innerText = `第${c}章`;
+                btn.onclick = () => selectChapter(c);
+                container.appendChild(btn);
+            });
+        }
+
+        function toggleMultiSelectMode(enabled) {
+            isMultiSelect = enabled;
+            document.getElementById('batchControl').style.display = enabled ? 'block' : 'none';
+            if (!enabled && selectedChapters.length > 1) {
+                selectedChapters = [selectedChapters[0]];
+                renderChapterButtons();
+                filterData();
+            }
+        }
+
+        function selectChapter(ch) {
+            if (isMultiSelect) {
+                if (selectedChapters.includes(ch)) {
+                    if (selectedChapters.length === 1) return;
+                    selectedChapters = selectedChapters.filter(c => c !== ch);
+                } else {
+                    selectedChapters.push(ch);
+                    selectedChapters.sort((a,b) => a - b);
+                }
+            } else {
+                selectedChapters = [ch];
+            }
+            renderChapterButtons();
+            filterData();
+        }
+
+        function selectAllChapters(isSelectAll) {
+            if (isSelectAll) {
+                selectedChapters = [...chapterList];
+            } else {
+                selectedChapters = [chapterList[0]];
+            }
+            renderChapterButtons();
+            filterData();
+        }
+
+        function filterData() {
+            activeList = allVocabData.filter(item => selectedChapters.includes(item.ch));
+
+            if (reviewOnly) {
+                activeList = activeList.filter(item => markedWords.includes(item.h));
+            }
+
+            currentIndex = 0;
+            updateScopeText();
+            showCard();
+        }
+
+        function updateScopeText() {
+            const textEl = document.getElementById('currentScopeText');
+            if (selectedChapters.length === chapterList.length) {
+                textEl.innerText = "範圍：全章節";
+            } else if (selectedChapters.length === 1) {
+                textEl.innerText = `範圍：第 ${selectedChapters[0]} 章`;
+            } else {
+                textEl.innerText = `範圍：第 ${selectedChapters.join(', ')} 章 (合併)`;
+            }
+        }
+
+        function toggleReviewOnly() {
+            reviewOnly = !reviewOnly;
+            const btn = document.getElementById('reviewOnlyBtn');
+            btn.classList.toggle('active', reviewOnly);
+            filterData();
+        }
+
+        function shuffleCurrentList() {
+            if (activeList.length <= 1) return;
+            for (let i = activeList.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [activeList[i], activeList[j]] = [activeList[j], activeList[i]];
+            }
+            currentIndex = 0;
+            showCard();
+        }
+
+        function clearAllMarks() {
+            if (markedWords.length === 0) {
+                alert("目前沒有任何標記的單字！");
+                return;
+            }
+            if (confirm(`確定要清空已標記的 ${markedWords.length} 個單字嗎？`)) {
+                markedWords = [];
+                localStorage.removeItem('hebrew_marked_words');
+                filterData();
+            }
+        }
+
+        function showCard() {
+            const countEl = document.getElementById('countText');
+            if (activeList.length === 0) {
+                document.getElementById('hebrewFront').innerText = "無資料";
+                document.getElementById('meaningBack').innerText = "請勾選章節或標記單字";
+                document.getElementById('hebrewBack').innerText = "";
+                document.getElementById('cardCh').innerText = "-";
+                document.getElementById('cardChBack').innerText = "-";
+                countEl.innerText = "0 / 0";
+                document.getElementById('progressFill').style.width = "0%";
+                return;
+            }
+
+            const item = activeList[currentIndex];
+            document.getElementById('cardCh').innerText = `Ch.${item.ch}`;
+            document.getElementById('cardChBack').innerText = `Ch.${item.ch}`;
+            document.getElementById('hebrewFront').innerText = item.h;
+            document.getElementById('meaningBack').innerText = item.m;
+            document.getElementById('hebrewBack').innerText = item.h;
+            
+            isFlipped = false;
+            document.getElementById('card').classList.remove('flipped');
+
+            const markBtn = document.getElementById('markBtn');
+            const isMarked = markedWords.includes(item.h);
+            markBtn.classList.toggle('active', isMarked);
+            markBtn.innerText = isMarked ? "★ 已標記" : "☆ 標記";
+
+            countEl.innerText = `${currentIndex + 1} / ${activeList.length}`;
+            const pct = ((currentIndex + 1) / activeList.length) * 100;
+            document.getElementById('progressFill').style.width = pct + '%';
+        }
+
+        function flipCard() {
+            if (activeList.length === 0) return;
+            isFlipped = !isFlipped;
+            document.getElementById('card').classList.toggle('flipped', isFlipped);
+        }
+
+        function nextCard() {
+            if (currentIndex < activeList.length - 1) {
+                currentIndex++;
+                showCard();
+            }
+        }
+
+        function prevCard() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                showCard();
+            }
+        }
+
+        function toggleCurrentMark() {
+            if (activeList.length === 0) return;
+            const item = activeList[currentIndex];
+            const idx = markedWords.indexOf(item.h);
+            if (idx > -1) {
+                markedWords.splice(idx, 1);
+            } else {
+                markedWords.push(item.h);
+            }
+            localStorage.setItem('hebrew_marked_words', JSON.stringify(markedWords));
+            
+            if (reviewOnly) {
+                filterData();
+            } else {
+                showCard();
+            }
+        }
+
+        // 初始化
+        initApp();
+    </script>
+</body>
+</html>
