@@ -139,17 +139,41 @@
         .progress-bar { width: 100%; max-width: 420px; height: 8px; background: #e2e8f0; border-radius: 4px; margin-bottom: 20px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent) 0%, #60a5fa 100%); width: 0%; transition: width 0.3s ease; }
 
-        /* 卡片區域 */
-        .card-container { perspective: 1000px; width: 100%; max-width: 420px; height: 280px; margin-bottom: 24px; cursor: pointer; user-select: none; touch-action: manipulation; }
-        .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 20px; box-shadow: var(--shadow); background: var(--card-bg); }
+        /* 卡片區域：修復手機版 3D 翻牌殘影 Bug */
+        .card-container { 
+            perspective: 1000px; 
+            -webkit-perspective: 1000px;
+            width: 100%; 
+            max-width: 420px; 
+            height: 280px; 
+            margin-bottom: 24px; 
+            cursor: pointer; 
+            user-select: none; 
+            touch-action: manipulation; 
+        }
+        .card { 
+            width: 100%; 
+            height: 100%; 
+            position: relative; 
+            transform-style: preserve-3d; 
+            -webkit-transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            border-radius: 20px; 
+            box-shadow: var(--shadow); 
+            background: var(--card-bg); 
+        }
         .card-container:hover .card { box-shadow: var(--shadow-hover); }
-        .card.flipped { transform: rotateY(180deg); }
+        .card.flipped { 
+            transform: rotateY(180deg); 
+            -webkit-transform: rotateY(180deg);
+        }
         
         .card-face { 
             position: absolute; 
             width: 100%; 
             height: 100%; 
             backface-visibility: hidden; 
+            -webkit-backface-visibility: hidden;
             display: flex; 
             flex-direction: column; 
             justify-content: center; 
@@ -158,13 +182,25 @@
             text-align: center; 
             border-radius: 20px; 
             border: 1px solid rgba(226, 232, 240, 0.8); 
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
         
         .card-front { 
             background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); 
+            z-index: 2;
         }
         
-        /* 垂直佈局：拉大單字與按鈕之間的間距 gap: 14px */
+        /* 背面定位與獨立圖層修復 */
+        .card-back { 
+            background: linear-gradient(180deg, #fefce8 0%, #ffffff 100%); 
+            transform: rotateY(180deg) translateZ(1px); 
+            -webkit-transform: rotateY(180deg) translateZ(1px); 
+            border: 2px solid #fef08a;
+            z-index: 1;
+        }
+
+        /* 垂直佈局：單字與按鈕間距 14px */
         .hebrew-text-wrapper {
             display: flex;
             flex-direction: column;
@@ -182,7 +218,7 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        /* 播放按鈕尺寸改小 (42px -> 34px) */
+        /* 播放按鈕尺寸 34px，解決 iOS 殘影與位移 */
         .audio-btn {
             background: #eff6ff;
             border: 1px solid #bfdbfe;
@@ -194,19 +230,24 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: background 0.2s, border-color 0.2s;
             touch-action: manipulation;
             box-shadow: 0 2px 5px rgba(37, 99, 235, 0.12);
             z-index: 10;
+            -webkit-tap-highlight-color: transparent;
         }
-        .audio-btn:hover {
-            background: var(--accent);
-            color: white;
-            border-color: var(--accent);
-            transform: scale(1.1);
-            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+        @media (hover: hover) {
+            .audio-btn:hover {
+                background: var(--accent);
+                color: white;
+                border-color: var(--accent);
+            }
         }
-        /* 播放喇叭 SVG 圖示縮小 (20px -> 16px) */
+        .audio-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 播放喇叭 SVG 圖示 16px */
         .audio-btn svg {
             width: 16px;
             height: 16px;
@@ -234,12 +275,6 @@
             border-radius: 20px; 
             font-weight: 700; 
             letter-spacing: 0.05em;
-        }
-        
-        .card-back { 
-            background: linear-gradient(180deg, #fefce8 0%, #ffffff 100%); 
-            transform: rotateY(180deg); 
-            border: 2px solid #fef08a;
         }
         
         .meaning-text { 
