@@ -139,7 +139,7 @@
         .progress-bar { width: 100%; max-width: 420px; height: 8px; background: #e2e8f0; border-radius: 4px; margin-bottom: 20px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent) 0%, #60a5fa 100%); width: 0%; transition: width 0.3s ease; }
 
-        /* 卡片區域：修復手機版 3D 翻牌殘影 Bug */
+        /* 卡片區域：3D 翻牌與圖層獨立隔離 */
         .card-container { 
             perspective: 1000px; 
             -webkit-perspective: 1000px;
@@ -191,7 +191,6 @@
             z-index: 2;
         }
         
-        /* 背面定位與獨立圖層修復 */
         .card-back { 
             background: linear-gradient(180deg, #fefce8 0%, #ffffff 100%); 
             transform: rotateY(180deg) translateZ(1px); 
@@ -200,13 +199,13 @@
             z-index: 1;
         }
 
-        /* 垂直佈局：單字與按鈕間距 14px */
+        /* 垂直佈局：單字與喇叭按鈕間距加大至 22px */
         .hebrew-text-wrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 14px;
+            gap: 22px;
         }
 
         .hebrew-text { 
@@ -218,7 +217,7 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        /* 播放按鈕尺寸 34px，解決 iOS 殘影與位移 */
+        /* 播放按鈕尺寸 34px */
         .audio-btn {
             background: #eff6ff;
             border: 1px solid #bfdbfe;
@@ -261,7 +260,7 @@
             color: #94a3b8;
             font-weight: 500;
             letter-spacing: -0.01em;
-            margin-top: -4px;
+            margin-top: -12px;
         }
         
         .chapter-tag { 
@@ -374,7 +373,7 @@
                         </svg>
                     </button>
                     <!-- 提示文字 -->
-                    <span class="audio-tip">（因聲音來源線上，目前只能使用電腦版 Chrome 播放）</span>
+                    <span class="audio-tip">（因音源來自線上，當前只能使用Chrome播放）</span>
                 </div>
                 <span style="font-size:0.75rem; color:var(--text-muted); position:absolute; bottom:12px; font-weight:500;">(點擊空白區域翻面)</span>
             </div>
@@ -390,7 +389,7 @@
                         </svg>
                     </button>
                     <!-- 提示文字 -->
-                    <span class="audio-tip">（因聲音來源線上，目前只能使用電腦版 Chrome 播放）</span>
+                    <span class="audio-tip">（因音源來自線上，當前只能使用Chrome播放）</span>
                 </div>
             </div>
         </div>
@@ -599,7 +598,7 @@
             { ch: 21, h: "זָבַח", m: "宰殺、獻祭" },
             { ch: 21, h: "חָנָה", m: "紮營、圍城" },
             { ch: 21, h: "נוּחַ", m: "休息、定居" },
-            { ch: 21, h: "נָסַע", m: "出發、拔出" },
+            { ch: 21, h: "נָ contest", m: "出發、拔出" },
             { ch: 21, h: "פָּנָה", m: "轉、轉過臉" },
             { ch: 21, h: "פָּתַח", m: "開" },
             { ch: 21, h: "רָדַף", m: "追趕、迫害" },
@@ -656,7 +655,7 @@
             { ch: 24, h: "פָּלָא", m: "（Niphal）非常驚人、令人驚奇" },
             { ch: 24, h: "רוּץ", m: "跑" },
             { ch: 24, h: "שָׁחַת", m: "（Piel, Hiphil）被敗壞、破壞、毀滅" },
-            { ch: 24, h: "שָׁמַד", m: "（Niphal）被毀滅、滅絕" },
+            { ch: 24, h: "שָׁמֵד", m: "（Niphal）被毀滅、滅絕" },
             // Ch.25
             { ch: 25, h: "הָפַךְ", m: "翻轉、推翻" },
             { ch: 25, h: "זָנָה", m: "行淫、作妓女" },
