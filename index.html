@@ -2,102 +2,293 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <!-- 1. Viewport 禁用縮放 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>聖經希伯來文初階 — 單字記憶卡</title>
     <style>
         :root {
-            --primary: #2c3e50;
-            --accent: #2980b9;
-            --bg: #f5f7fa;
+            --primary: #1e293b;
+            --primary-light: #334155;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --gold: #d97706;
+            --gold-light: #fef3c7;
+            --bg: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             --card-bg: #ffffff;
-            --text: #333333;
-            --success: #27ae60;
-            --warning: #f39c12;
-            --danger: #e74c3c;
+            --text-dark: #0f172a;
+            --text-muted: #64748b;
+            --danger: #ef4444;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+            --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
         }
 
         * { 
             box-sizing: border-box; 
             margin: 0; 
             padding: 0; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; 
         }
 
-        /* 2. 允許頁面正常滾動，但禁用雙擊縮放手勢 */
         html, body { 
-            background-color: var(--bg); 
-            color: var(--text); 
+            background: var(--bg); 
+            color: var(--text-dark); 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
             min-height: 100vh; 
-            padding: 20px;
-            touch-action: manipulation; /* 保留滾動，禁止雙擊縮放 */
+            padding: 24px 16px;
+            touch-action: manipulation;
         }
         
-        header { text-align: center; margin-bottom: 20px; }
-        h1 { color: var(--primary); margin-bottom: 5px; font-size: 1.8rem; }
-        p.subtitle { color: #666; font-size: 0.9rem; }
+        header { text-align: center; margin-bottom: 24px; }
+        h1 { 
+            color: var(--primary); 
+            font-size: 1.9rem; 
+            font-weight: 800; 
+            letter-spacing: -0.025em; 
+            margin-bottom: 6px;
+            background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        p.subtitle { color: var(--text-muted); font-size: 0.9rem; font-weight: 500; }
 
         /* 控制面板 */
-        .controls-panel { background: white; padding: 18px 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 100%; max-width: 520px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .chapter-header { display: flex; justify-content: space-between; align-items: center; }
-        .chapter-title { font-size: 0.95rem; font-weight: bold; color: var(--primary); }
+        .controls-panel { 
+            background: rgba(255, 255, 255, 0.9); 
+            backdrop-filter: blur(8px);
+            padding: 20px; 
+            border-radius: 16px; 
+            box-shadow: var(--shadow); 
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            width: 100%; 
+            max-width: 500px; 
+            margin-bottom: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 14px; 
+        }
         
-        .mode-toggle { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--accent); font-weight: 600; cursor: pointer; user-select: none; }
-        .mode-toggle input { cursor: pointer; }
+        .chapter-header { display: flex; justify-content: space-between; align-items: center; }
+        .chapter-title { font-size: 0.95rem; font-weight: 700; color: var(--primary); }
+        
+        .mode-toggle { 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            font-size: 0.85rem; 
+            color: var(--accent); 
+            font-weight: 600; 
+            cursor: pointer; 
+            user-select: none; 
+            background: #eff6ff;
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        .mode-toggle input { cursor: pointer; accent-color: var(--accent); }
 
-        .batch-btn { font-size: 0.8rem; color: var(--accent); background: none; border: none; cursor: pointer; text-decoration: underline; }
+        .batch-btn { font-size: 0.8rem; color: var(--accent); background: none; border: none; cursor: pointer; font-weight: 600; }
+        .batch-btn:hover { text-decoration: underline; }
 
         .chapter-select-group { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-        .ch-btn { padding: 6px 12px; font-size: 0.85rem; border: 1px solid #cbd5e1; background: white; border-radius: 8px; cursor: pointer; transition: all 0.2s; user-select: none; touch-action: manipulation; }
-        .ch-btn:hover { border-color: var(--accent); }
-        .ch-btn.selected { background: var(--accent); color: white; border-color: var(--accent); font-weight: bold; }
+        .ch-btn { 
+            padding: 6px 14px; 
+            font-size: 0.85rem; 
+            border: 1px solid #e2e8f0; 
+            background: white; 
+            color: var(--text-dark);
+            border-radius: 10px; 
+            cursor: pointer; 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+            user-select: none; 
+            touch-action: manipulation;
+            font-weight: 500;
+        }
+        .ch-btn:hover { border-color: var(--accent); color: var(--accent); background: #f8fafc; }
+        .ch-btn.selected { 
+            background: var(--accent); 
+            color: white; 
+            border-color: var(--accent); 
+            font-weight: 700; 
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
 
-        .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
-        .tool-btn { padding: 6px 12px; font-size: 0.85rem; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: all 0.2s; touch-action: manipulation; }
-        .tool-btn.active { background: #fef3c7; border-color: #f59e0b; color: #92400e; font-weight: bold; }
-        .tool-btn.danger { color: #c0392b; border-color: #f5c6cb; }
-        .tool-btn.danger:hover { background: #f8d7da; }
+        .toolbar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; border-top: 1px solid #f1f5f9; padding-top: 12px; }
+        .tool-btn { 
+            padding: 8px 14px; 
+            font-size: 0.85rem; 
+            border: 1px solid #e2e8f0; 
+            background: #f8fafc; 
+            color: var(--primary);
+            border-radius: 10px; 
+            cursor: pointer; 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            transition: all 0.2s; 
+            touch-action: manipulation; 
+            font-weight: 600;
+        }
+        .tool-btn:hover { background: #f1f5f9; }
+        .tool-btn.active { background: var(--gold-light); border-color: var(--gold); color: #92400e; }
+        .tool-btn.danger { color: #dc2626; border-color: #fecaca; background: #fff5f5; }
+        .tool-btn.danger:hover { background: #fee2e2; }
 
         /* 進度與統計資訊 */
-        .status-info { display: flex; justify-content: space-between; width: 100%; max-width: 420px; font-size: 0.85rem; color: #64748b; margin-bottom: 8px; font-weight: 500; }
+        .status-info { display: flex; justify-content: space-between; width: 100%; max-width: 420px; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
+
+        .progress-bar { width: 100%; max-width: 420px; height: 8px; background: #e2e8f0; border-radius: 4px; margin-bottom: 20px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent) 0%, #60a5fa 100%); width: 0%; transition: width 0.3s ease; }
 
         /* 卡片區域 */
-        .card-container { perspective: 1000px; width: 100%; max-width: 420px; height: 260px; margin-bottom: 20px; cursor: pointer; user-select: none; touch-action: manipulation; }
-        .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); background: var(--card-bg); }
+        .card-container { perspective: 1000px; width: 100%; max-width: 420px; height: 280px; margin-bottom: 24px; cursor: pointer; user-select: none; touch-action: manipulation; }
+        .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 20px; box-shadow: var(--shadow); background: var(--card-bg); }
+        .card-container:hover .card { box-shadow: var(--shadow-hover); }
         .card.flipped { transform: rotateY(180deg); }
-        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 24px; text-align: center; border-radius: 16px; border: 1px solid #e2e8f0; }
         
-        .card-front { background: #ffffff; }
-        .hebrew-text { font-size: 3.2rem; font-family: 'Ezra SIL', 'SBL Hebrew', 'Times New Roman', serif; direction: rtl; color: #0f172a; margin-bottom: 12px; line-height: 1.2; }
-        .chapter-tag { position: absolute; top: 16px; left: 16px; font-size: 0.75rem; background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 12px; font-weight: 600; }
+        .card-face { 
+            position: absolute; 
+            width: 100%; 
+            height: 100%; 
+            backface-visibility: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 24px; 
+            text-align: center; 
+            border-radius: 20px; 
+            border: 1px solid rgba(226, 232, 240, 0.8); 
+        }
         
-        .card-back { background: #fafafa; transform: rotateY(180deg); }
-        .meaning-text { font-size: 1.5rem; color: var(--primary); font-weight: bold; line-height: 1.4; margin-bottom: 10px; }
-        .hebrew-text-sub { font-size: 1.8rem; font-family: 'Ezra SIL', 'SBL Hebrew', 'Times New Roman', serif; direction: rtl; color: #64748b; }
+        .card-front { 
+            background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); 
+        }
+        
+        /* 垂直佈局：單字在上方，喇叭在正下方 */
+        .hebrew-text-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .hebrew-text { 
+            font-size: 3.2rem; 
+            font-family: 'Ezra SIL', 'SBL Hebrew', 'Times New Roman', serif; 
+            direction: rtl; 
+            color: #0f172a; 
+            line-height: 1.1; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .audio-btn {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            color: var(--accent);
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            touch-action: manipulation;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15);
+            z-index: 10;
+        }
+        .audio-btn:hover {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .audio-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: currentColor;
+            pointer-events: none;
+        }
+
+        /* 喇叭下方提示文字 */
+        .audio-tip {
+            font-size: 0.68rem;
+            color: #94a3b8;
+            font-weight: 500;
+            letter-spacing: -0.01em;
+            margin-top: 2px;
+        }
+        
+        .chapter-tag { 
+            position: absolute; 
+            top: 18px; 
+            left: 18px; 
+            font-size: 0.75rem; 
+            background: #e2e8f0; 
+            color: var(--primary); 
+            padding: 4px 12px; 
+            border-radius: 20px; 
+            font-weight: 700; 
+            letter-spacing: 0.05em;
+        }
+        
+        .card-back { 
+            background: linear-gradient(180deg, #fefce8 0%, #ffffff 100%); 
+            transform: rotateY(180deg); 
+            border: 2px solid #fef08a;
+        }
+        
+        .meaning-text { 
+            font-size: 1.5rem; 
+            color: var(--primary); 
+            font-weight: 800; 
+            line-height: 1.3; 
+            margin-bottom: 8px; 
+        }
+        
+        .hebrew-text-sub { 
+            font-size: 1.8rem; 
+            font-family: 'Ezra SIL', 'SBL Hebrew', 'Times New Roman', serif; 
+            direction: rtl; 
+            color: #b45309; 
+            opacity: 0.85;
+        }
 
         /* 按鈕組 */
         .action-btns { display: flex; gap: 12px; width: 100%; max-width: 420px; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: all 0.2s; font-size: 0.95rem; touch-action: manipulation; }
-        .btn-prev, .btn-next { background: #e2e8f0; color: #334155; }
-        .btn-prev:hover, .btn-next:hover { background: #cbd5e1; }
-        .btn-mark { background: #fffbebf7; color: #b45309; border: 1px solid #fde68a; }
-        .btn-mark.active { background: #fef3c7; color: #92400e; font-weight: bold; border-color: #f59e0b; }
-
-        .progress-bar { width: 100%; max-width: 420px; height: 6px; background: #e2e8f0; border-radius: 3px; margin-bottom: 12px; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+        .btn { 
+            flex: 1; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 12px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            font-size: 0.95rem; 
+            touch-action: manipulation; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .btn-prev, .btn-next { background: #ffffff; color: var(--primary); border: 1px solid #cbd5e1; }
+        .btn-prev:hover, .btn-next:hover { background: #f1f5f9; border-color: #94a3b8; }
+        
+        .btn-mark { background: #fffbe3; color: #b45309; border: 1px solid #fde68a; }
+        .btn-mark.active { 
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+            color: white; 
+            border: none; 
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+        }
     </style>
 </head>
 <body>
 
     <header>
         <h1>聖經希伯來文初階</h1>
-        <p class="subtitle">單字卡記憶與多章節合併複習</p>
+        <p class="subtitle">互動式單字卡與發音朗讀</p>
     </header>
 
-    <!-- 控制面板 -->
     <div class="controls-panel">
         <div class="chapter-header">
             <span class="chapter-title">選擇複習章節：</span>
@@ -113,49 +304,70 @@
             </div>
         </div>
         
-        <div class="chapter-select-group" id="chapterGroup">
-            <!-- 由 JavaScript 動態生成章節按鈕 -->
-        </div>
+        <div class="chapter-select-group" id="chapterGroup"></div>
 
         <div class="toolbar">
             <button class="tool-btn" id="reviewOnlyBtn" onclick="toggleReviewOnly()">⭐ 僅看標記單字</button>
             <button class="tool-btn" onclick="shuffleCurrentList()">🎲 隨機打亂</button>
-            <button class="tool-btn danger" onclick="clearAllMarks()">🗑️ 清空所有標記</button>
+
+            <label class="mode-toggle" style="background:#fef3c7; color:#92400e;">
+                <input type="checkbox" id="autoPlayToggle" onchange="toggleAutoPlay(this.checked)"> 🔊 自動朗讀
+            </label>
+
+            <button class="tool-btn danger" onclick="clearAllMarks()">🗑️ 清空標記</button>
         </div>
     </div>
 
-    <!-- 狀態與進度 -->
     <div class="status-info">
         <span id="currentScopeText">範圍：第 3 章</span>
         <span id="countText">1 / 20</span>
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
 
-    <!-- 單字卡區域 -->
-    <div class="card-container" id="cardContainer" onclick="flipCard()">
+    <div class="card-container" id="cardContainer" onclick="handleCardClick(event)">
         <div class="card" id="card">
+            <!-- 卡片正面 -->
             <div class="card-face card-front">
                 <span class="chapter-tag" id="cardCh">Ch.3</span>
-                <div class="hebrew-text" id="hebrewFront">אָדָם</div>
-                <span style="font-size:0.8rem; color:#94a3b8; position:absolute; bottom:16px;">(點擊卡片查看中文)</span>
+                <div class="hebrew-text-wrapper">
+                    <div class="hebrew-text" id="hebrewFront">אָדָם</div>
+                    <button class="audio-btn" onclick="speakCurrentWord(event)" title="點擊發音">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                        </svg>
+                    </button>
+                    <!-- 提示文字 -->
+                    <span class="audio-tip">（因聲音源於線上，建議使用 Chrome 播放）</span>
+                </div>
+                <span style="font-size:0.75rem; color:var(--text-muted); position:absolute; bottom:12px; font-weight:500;">(點擊空白區域翻面)</span>
             </div>
+            <!-- 卡片背面 -->
             <div class="card-face card-back">
-                <span class="chapter-tag" id="cardChBack">Ch.3</span>
+                <span class="chapter-tag" id="cardChBack" style="background:#fef08a; color:#854d0e;">Ch.3</span>
                 <div class="meaning-text" id="meaningBack">人、亞當</div>
-                <div class="hebrew-text-sub" id="hebrewBack">אָדָם</div>
+                <div class="hebrew-text-wrapper">
+                    <div class="hebrew-text-sub" id="hebrewBack">אָדָם</div>
+                    <button class="audio-btn" onclick="speakCurrentWord(event)" title="點擊發音">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                        </svg>
+                    </button>
+                    <!-- 提示文字 -->
+                    <span class="audio-tip">（因聲音源於線上，建議使用 Chrome 播放）</span>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 操作按鈕 -->
     <div class="action-btns">
         <button class="btn btn-prev" onclick="prevCard()">上一張</button>
         <button class="btn btn-mark" id="markBtn" onclick="toggleCurrentMark()">☆ 標記</button>
         <button class="btn btn-next" onclick="nextCard()">下一張</button>
     </div>
 
+    <audio id="ttsAudioPlayer" style="display:none;"></audio>
+
     <script>
-        // JS 防雙擊縮放手勢處置
         let lastTouchEnd = 0;
         document.addEventListener('touchend', function (event) {
             const now = (new Date()).getTime();
@@ -167,7 +379,6 @@
 
         const chapterList = [3, 4, 5, 6, 7, 8, 9, 19, 20, 21, 22, 23, 24, 25, 26, 27];
 
-        // 資料庫
         const allVocabData = [
             // Ch.3
             { ch: 3, h: "אָדָם", m: "人、亞當" },
@@ -457,9 +668,9 @@
             { ch: 27, h: "שֶׁקֶר", m: "謊話、虛假、欺騙" }
         ];
 
-        // 預設狀態
         let selectedChapters = [3];
         let isMultiSelect = false;
+        let isAutoPlay = false;
         let activeList = [];
         let currentIndex = 0;
         let isFlipped = false;
@@ -469,6 +680,20 @@
         function initApp() {
             renderChapterButtons();
             filterData();
+
+            // 解除瀏覽器對音訊自動播放的限制
+            document.addEventListener('click', unlockAudio, { once: true });
+            document.addEventListener('touchstart', unlockAudio, { once: true });
+        }
+
+        function unlockAudio() {
+            const player = document.getElementById('ttsAudioPlayer');
+            player.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+            player.play().catch(() => {});
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.getVoices();
+            }
         }
 
         function renderChapterButtons() {
@@ -490,6 +715,13 @@
                 selectedChapters = [selectedChapters[0]];
                 renderChapterButtons();
                 filterData();
+            }
+        }
+
+        function toggleAutoPlay(enabled) {
+            isAutoPlay = enabled;
+            if (isAutoPlay) {
+                speakCurrentWord();
             }
         }
 
@@ -602,6 +834,15 @@
             countEl.innerText = `${currentIndex + 1} / ${activeList.length}`;
             const pct = ((currentIndex + 1) / activeList.length) * 100;
             document.getElementById('progressFill').style.width = pct + '%';
+
+            if (isAutoPlay) {
+                speakCurrentWord();
+            }
+        }
+
+        function handleCardClick(event) {
+            if (event.target.closest('.audio-btn')) return;
+            flipCard();
         }
 
         function flipCard() {
@@ -642,7 +883,44 @@
             }
         }
 
-        // 初始化
+        /* 專為 Chrome 與現代瀏覽器優化的線上 TTS 播放機制 */
+        function speakCurrentWord(event) {
+            if (event) event.stopPropagation();
+            if (activeList.length === 0) return;
+
+            const rawText = activeList[currentIndex].h;
+            const cleanText = rawText.split('/')[0].trim();
+
+            playOnlineTTS(cleanText);
+        }
+
+        function playOnlineTTS(text) {
+            const player = document.getElementById('ttsAudioPlayer');
+            const encodedText = encodeURIComponent(text);
+            
+            // 使用線上 TTS 音訊源
+            player.src = `https://dict.youdao.com/dictvoice?audio=${encodedText}&le=he`;
+            player.load();
+            
+            const playPromise = player.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    // 若線上音訊請求受阻，備援切換為系統內建 SpeechSynthesis
+                    speakWebSpeech(text);
+                });
+            }
+        }
+
+        function speakWebSpeech(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'he-IL';
+                utterance.rate = 0.8;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
         initApp();
     </script>
 </body>
