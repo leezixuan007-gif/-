@@ -133,11 +133,13 @@
         .tool-btn.danger { color: #dc2626; border-color: #fecaca; background: #fff5f5; }
         .tool-btn.danger:hover { background: #fee2e2; }
 
+        /* 進度與統計資訊 */
         .status-info { display: flex; justify-content: space-between; width: 100%; max-width: 420px; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
 
         .progress-bar { width: 100%; max-width: 420px; height: 8px; background: #e2e8f0; border-radius: 4px; margin-bottom: 20px; overflow: hidden; }
         .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent) 0%, #60a5fa 100%); width: 0%; transition: width 0.3s ease; }
 
+        /* 卡片區域 */
         .card-container { perspective: 1000px; width: 100%; max-width: 420px; height: 280px; margin-bottom: 24px; cursor: pointer; user-select: none; touch-action: manipulation; }
         .card { width: 100%; height: 100%; position: relative; transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); border-radius: 20px; box-shadow: var(--shadow); background: var(--card-bg); }
         .card-container:hover .card { box-shadow: var(--shadow-hover); }
@@ -162,12 +164,13 @@
             background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%); 
         }
         
+        /* 垂直佈局：拉大單字與按鈕之間的間距 gap: 14px */
         .hebrew-text-wrapper {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 14px;
         }
 
         .hebrew-text { 
@@ -179,34 +182,45 @@
             text-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
 
+        /* 播放按鈕尺寸改小 (42px -> 34px) */
         .audio-btn {
             background: #eff6ff;
             border: 1px solid #bfdbfe;
             color: var(--accent);
             border-radius: 50%;
-            width: 46px;
-            height: 46px;
+            width: 34px;
+            height: 34px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
             touch-action: manipulation;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15);
+            box-shadow: 0 2px 5px rgba(37, 99, 235, 0.12);
             z-index: 10;
         }
         .audio-btn:hover {
             background: var(--accent);
             color: white;
             border-color: var(--accent);
-            transform: scale(1.08);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transform: scale(1.1);
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
         }
+        /* 播放喇叭 SVG 圖示縮小 (20px -> 16px) */
         .audio-btn svg {
-            width: 22px;
-            height: 22px;
+            width: 16px;
+            height: 16px;
             fill: currentColor;
             pointer-events: none;
+        }
+
+        /* 喇叭下方提示文字 */
+        .audio-tip {
+            font-size: 0.68rem;
+            color: #94a3b8;
+            font-weight: 500;
+            letter-spacing: -0.01em;
+            margin-top: -4px;
         }
         
         .chapter-tag { 
@@ -244,6 +258,7 @@
             opacity: 0.85;
         }
 
+        /* 按鈕組 */
         .action-btns { display: flex; gap: 12px; width: 100%; max-width: 420px; }
         .btn { 
             flex: 1; 
@@ -273,7 +288,7 @@
 
     <header>
         <h1>聖經希伯來文初階</h1>
-        <p class="subtitle">互動式單字卡與全裝置相容發音</p>
+        <p class="subtitle">互動式單字卡與發音朗讀</p>
     </header>
 
     <div class="controls-panel">
@@ -323,8 +338,10 @@
                             <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                         </svg>
                     </button>
+                    <!-- 提示文字 -->
+                    <span class="audio-tip">（因聲音來源線上，目前只能使用電腦版 Chrome 播放）</span>
                 </div>
-                <span style="font-size:0.75rem; color:var(--text-muted); position:absolute; bottom:14px; font-weight:500;">(點擊空白區域翻面)</span>
+                <span style="font-size:0.75rem; color:var(--text-muted); position:absolute; bottom:12px; font-weight:500;">(點擊空白區域翻面)</span>
             </div>
             <!-- 卡片背面 -->
             <div class="card-face card-back">
@@ -337,6 +354,8 @@
                             <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                         </svg>
                     </button>
+                    <!-- 提示文字 -->
+                    <span class="audio-tip">（因聲音來源線上，目前只能使用電腦版 Chrome 播放）</span>
                 </div>
             </div>
         </div>
@@ -347,6 +366,8 @@
         <button class="btn btn-mark" id="markBtn" onclick="toggleCurrentMark()">☆ 標記</button>
         <button class="btn btn-next" onclick="nextCard()">下一張</button>
     </div>
+
+    <audio id="ttsAudioPlayer" style="display:none;"></audio>
 
     <script>
         let lastTouchEnd = 0;
@@ -662,20 +683,19 @@
             renderChapterButtons();
             filterData();
 
-            // 解除所有行動裝置（iOS/Android）的音訊播放限制
-            const unlockAudio = () => {
-                if ('speechSynthesis' in window) {
-                    window.speechSynthesis.cancel();
-                    const u = new SpeechSynthesisUtterance('');
-                    u.volume = 0;
-                    window.speechSynthesis.speak(u);
-                    window.speechSynthesis.getVoices();
-                }
-                document.removeEventListener('click', unlockAudio);
-                document.removeEventListener('touchstart', unlockAudio);
-            };
-            document.addEventListener('click', unlockAudio);
-            document.addEventListener('touchstart', unlockAudio);
+            // 解除瀏覽器對音訊自動播放的限制
+            document.addEventListener('click', unlockAudio, { once: true });
+            document.addEventListener('touchstart', unlockAudio, { once: true });
+        }
+
+        function unlockAudio() {
+            const player = document.getElementById('ttsAudioPlayer');
+            player.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+            player.play().catch(() => {});
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.getVoices();
+            }
         }
 
         function renderChapterButtons() {
@@ -865,44 +885,42 @@
             }
         }
 
-        /* 跨平台多重備援語音引擎：完全離線內建，絕對不被瀏覽器封鎖 */
+        /* 專為 Chrome 與現代瀏覽器優化的線上 TTS 播放機制 */
         function speakCurrentWord(event) {
             if (event) event.stopPropagation();
             if (activeList.length === 0) return;
 
             const rawText = activeList[currentIndex].h;
-            // 清除斜線與後續說明
             const cleanText = rawText.split('/')[0].trim();
-            // 清除希伯來文母音點號 (Niqqud)，防止極少數手機發音庫因辨識不出符號而發不出聲音
-            const pureHebrew = cleanText.replace(/[\u0591-\u05C7]/g, "");
 
-            if (!('speechSynthesis' in window)) {
-                alert("您的瀏覽器不支援語音功能");
-                return;
+            playOnlineTTS(cleanText);
+        }
+
+        function playOnlineTTS(text) {
+            const player = document.getElementById('ttsAudioPlayer');
+            const encodedText = encodeURIComponent(text);
+            
+            // 使用線上 TTS 音訊源
+            player.src = `https://dict.youdao.com/dictvoice?audio=${encodedText}&le=he`;
+            player.load();
+            
+            const playPromise = player.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    // 若線上音訊請求受阻，備援切換為系統內建 SpeechSynthesis
+                    speakWebSpeech(text);
+                });
             }
+        }
 
-            window.speechSynthesis.cancel(); // 停止先前的發音
-
-            const utterance = new SpeechSynthesisUtterance(cleanText);
-            utterance.lang = 'he-IL';
-            utterance.rate = 0.8;
-
-            // 自動尋找系統最合適的希伯來語音包
-            const voices = window.speechSynthesis.getVoices();
-            const heVoice = voices.find(v => v.lang.startsWith('he') || v.lang.includes('IL'));
-            if (heVoice) {
-                utterance.voice = heVoice;
+        function speakWebSpeech(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'he-IL';
+                utterance.rate = 0.8;
+                window.speechSynthesis.speak(utterance);
             }
-
-            // 備援機制：如果第一時間沒聲音或失敗，自動用純子音模式重新朗讀
-            utterance.onerror = function() {
-                const fallbackUtterance = new SpeechSynthesisUtterance(pureHebrew);
-                fallbackUtterance.lang = 'he-IL';
-                fallbackUtterance.rate = 0.8;
-                window.speechSynthesis.speak(fallbackUtterance);
-            };
-
-            window.speechSynthesis.speak(utterance);
         }
 
         initApp();
