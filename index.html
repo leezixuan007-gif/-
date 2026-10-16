@@ -203,7 +203,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 22px;
+            gap: 16px;
         }
 
         .hebrew-text { 
@@ -220,13 +220,13 @@
             border: 1px solid #bfdbfe;
             color: var(--accent);
             border-radius: 50%;
-            width: 34px;
-            height: 34px;
+            width: 38px;
+            height: 38px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: background 0.2s, border-color 0.2s;
+            transition: all 0.2s;
             touch-action: manipulation;
             box-shadow: 0 2px 5px rgba(37, 99, 235, 0.12);
             z-index: 10;
@@ -240,22 +240,21 @@
             }
         }
         .audio-btn:active {
-            transform: scale(0.95);
+            transform: scale(0.92);
         }
 
         .audio-btn svg {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             fill: currentColor;
             pointer-events: none;
         }
 
         .audio-tip {
-            font-size: 0.68rem;
+            font-size: 0.7rem;
             color: #94a3b8;
             font-weight: 500;
             letter-spacing: -0.01em;
-            margin-top: -12px;
         }
         
         .chapter-tag { 
@@ -376,8 +375,6 @@
                             <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                         </svg>
                     </button>
-                    <!-- 提示文字 -->
-                    <span class="audio-tip">（因音源來自線上，當前只能使用Chrome播放）</span>
                 </div>
                 <span style="font-size:0.75rem; color:var(--text-muted); position:absolute; bottom:12px; font-weight:500;">(點擊空白區域翻面)</span>
             </div>
@@ -393,8 +390,6 @@
                             <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                         </svg>
                     </button>
-                    <!-- 提示文字 -->
-                    <span class="audio-tip">（因音源來自線上，當前只能使用Chrome播放）</span>
                 </div>
             </div>
         </div>
@@ -1102,22 +1097,25 @@
             if (activeList.length === 0) return;
 
             const rawText = activeList[currentIndex].h;
-            // 清除發音請求中的特殊重音符號
-            const cleanText = rawText.replace(/[\u0591-\u05AF]/g, "").split('/')[0].trim();
+            // 过滤掉所有希伯来文变音与重音符号，只保留纯字母形态传给 TTS
+            const cleanText = rawText.replace(/[\u0591-\u05C7]/g, "").split('/')[0].trim();
 
-            playOnlineTTS(cleanText);
+            playWordAudio(cleanText);
         }
 
-        function playOnlineTTS(text) {
+        function playWordAudio(text) {
             const player = document.getElementById('ttsAudioPlayer');
             const encodedText = encodeURIComponent(text);
             
-            player.src = `https://dict.youdao.com/dictvoice?audio=${encodedText}&le=he`;
-            player.load();
+            // 使用稳定的多端 TTS 语音接口
+            const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=he&q=${encodedText}`;
+            
+            player.src = audioUrl;
             
             const playPromise = player.play();
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
+                    console.warn("网络音频播放受阻，自动切换至系统原生发音引擎:", error);
                     speakWebSpeech(text);
                 });
             }
