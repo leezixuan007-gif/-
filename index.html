@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>聖經希伯來文初階 — 單字記憶卡</title>
     <style>
@@ -376,7 +377,7 @@
                             <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                         </svg>
                     </button>
-                    <span class="audio-tip">（目前支持PC端Chrome、Safari以及移動端Safari播放）</span>
+                    <span class="audio-tip">（發音需裝置支援希伯來語語音，建議使用 Chrome / Safari）</span>
                 </div>
                 <span style="font-size:0.75rem; color:var(--text-muted); position:absolute; bottom:12px; font-weight:500;">(點擊空白區域翻面)</span>
             </div>
@@ -392,7 +393,7 @@
                             <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                         </svg>
                     </button>
-                    <span class="audio-tip">（目前支持PC端Chrome、Safari以及移動端Safari播放）</span>
+                    <span class="audio-tip">（發音需裝置支援希伯來語語音，建議使用 Chrome / Safari）</span>
                 </div>
             </div>
         </div>
@@ -888,22 +889,36 @@
         let reviewOnly = false;
         let markedWords = JSON.parse(localStorage.getItem('hebrew_marked_words') || '[]');
 
+        // 初始化 AudioContext 以支援手機 Chrome 解鎖音訊通道
+        let audioCtx = null;
+        function unlockAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    audioCtx = new AudioContext();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const player = document.getElementById('ttsAudioPlayer');
+            if (player) {
+                player.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+                player.play().catch(() => {});
+            }
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.getVoices();
+            }
+        }
+
         function initApp() {
             renderChapterButtons();
             filterData();
 
             document.addEventListener('click', unlockAudio, { once: true });
             document.addEventListener('touchstart', unlockAudio, { once: true });
-        }
-
-        function unlockAudio() {
-            const player = document.getElementById('ttsAudioPlayer');
-            player.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
-            player.play().catch(() => {});
-
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.getVoices();
-            }
         }
 
         function renderChapterButtons() {
@@ -1095,40 +1110,144 @@
             }
         }
 
+        // 升級版希伯來文點讀發音函數 (相容手機 Chrome 及多重備援機制)
         function speakCurrentWord(event) {
             if (event) event.stopPropagation();
             if (activeList.length === 0) return;
 
+            unlockAudio(); // 解鎖手機音訊
+
             const rawText = activeList[currentIndex].h;
-            const cleanText = rawText.replace(/[\u0591-\u05C7]/g, "").split('/')[0].trim();
+            // 清理朗讀文字，移除 Unicode 重音/特殊記號，取第一個主字
+            const cleanText = rawText.replace(/[\u0591-\u05AF\u05C1-\u05C7]/g, "").split('/')[0].trim();
 
             playWordAudio(cleanText);
         }
 
-        function playWordAudio(text) {
-            const player = document.getElementById('ttsAudioPlayer');
-            const encodedText = encodeURIComponent(text);
-            
-            const audioUrl = `https://dict.youdao.com/dictvoice?audio=${encodedText}&le=he`;
-            
-            player.src = audioUrl;
-            
-            const playPromise = player.play();
-            if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    speakWebSpeech(text);
-                });
+        // ===== 發音：優先使用裝置內建希伯來語語音，失敗再用線上語音備援 =====
+        const AUDIO_TIP_DEFAULT = '（發音需裝置支援希伯來語語音，建議使用 Chrome / Safari）';
+        const AUDIO_TIP_FAIL = '⚠️ 此瀏覽器/裝置暫無法發音，請改用 Chrome 或 Safari，或於系統安裝希伯來語語音';
+        let currentSpeakToken = 0;
+
+        function setAudioTip(failed) {
+            document.querySelectorAll('.audio-tip').forEach(el => {
+                el.textContent = failed ? AUDIO_TIP_FAIL : AUDIO_TIP_DEFAULT;
+                el.style.color = failed ? '#dc2626' : '';
+            });
+        }
+
+        // 找希伯來語語音（相容 he-IL / iw-IL / he_IL 等不同寫法，Android 常見 iw）
+        function findHebrewVoice() {
+            if (!('speechSynthesis' in window)) return null;
+            const voices = window.speechSynthesis.getVoices() || [];
+            const list = voices.filter(v => /^(he|iw)([-_]|$)/i.test(v.lang || '') || /hebrew|עברית/i.test(v.name || ''));
+            if (!list.length) return null;
+            return list.find(v => v.localService) || list[0];
+        }
+
+        // 語音清單在部分瀏覽器是非同步載入；已載入時同步執行，以保留手勢觸發
+        function ensureVoices(cb) {
+            const synth = window.speechSynthesis;
+            if (!synth || synth.getVoices().length) return cb();
+            let done = false;
+            const finish = () => {
+                if (done) return;
+                done = true;
+                if (synth.removeEventListener) synth.removeEventListener('voiceschanged', finish);
+                cb();
+            };
+            if (synth.addEventListener) synth.addEventListener('voiceschanged', finish);
+            setTimeout(finish, 800);
+        }
+
+        function speakNative(voice, text, token, onFail) {
+            const synth = window.speechSynthesis;
+            let started = false, failed = false;
+            const fail = () => {
+                if (failed || started || token !== currentSpeakToken) return;
+                failed = true;
+                try { synth.cancel(); } catch (e) {}
+                onFail();
+            };
+            try {
+                synth.cancel();
+                const u = new SpeechSynthesisUtterance(text);
+                if (voice) {
+                    u.voice = voice;
+                    u.lang = voice.lang;
+                } else {
+                    u.lang = 'he-IL';
+                }
+                u.rate = 0.8;
+                u.onstart = () => { started = true; if (token === currentSpeakToken) setAudioTip(false); };
+                u.onerror = (e) => {
+                    if (e && (e.error === 'canceled' || e.error === 'interrupted')) return;
+                    fail();
+                };
+                window._hebrewUtterance = u; // 避免 Chrome 提前回收 utterance 導致無聲
+                synth.speak(u);
+                setTimeout(() => {
+                    if (!started && !synth.speaking) fail();
+                }, 3000);
+            } catch (e) {
+                fail();
             }
         }
 
-        function speakWebSpeech(text) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'he-IL';
-                utterance.rate = 0.8;
-                window.speechSynthesis.speak(utterance);
-            }
+        function playOnline(text, token, onFail) {
+            const player = document.getElementById('ttsAudioPlayer');
+            if (!player) return onFail();
+            const q = encodeURIComponent(text);
+            const urls = ['he', 'iw'].map(l => `https://translate.google.com/translate_tts?ie=UTF-8&q=${q}&tl=${l}&client=tw-ob`);
+
+            const tryUrl = (i) => {
+                if (token !== currentSpeakToken) return;
+                if (i >= urls.length) return onFail();
+                let ended = false;
+                const finish = (ok) => {
+                    if (ended) return;
+                    ended = true;
+                    clearTimeout(timer);
+                    player.removeEventListener('playing', onPlaying);
+                    player.removeEventListener('error', onError);
+                    if (ok) { if (token === currentSpeakToken) setAudioTip(false); }
+                    else tryUrl(i + 1);
+                };
+                const onPlaying = () => { if (/translate_tts/.test(player.currentSrc || '')) finish(true); }; // 忽略解鎖用的靜音檔
+                const onError = () => finish(false);
+                const timer = setTimeout(() => finish(false), 5000);
+                player.addEventListener('playing', onPlaying);
+                player.addEventListener('error', onError);
+                player.src = urls[i];
+                const p = player.play();
+                if (p && p.catch) p.catch(e => { if (e && e.name === 'AbortError') return; finish(false); });
+            };
+            tryUrl(0);
+        }
+
+        function playWordAudio(text) {
+            const token = ++currentSpeakToken;
+            const player = document.getElementById('ttsAudioPlayer');
+            try { if (player) player.pause(); } catch (e) {}
+
+            const hasSynth = 'speechSynthesis' in window && typeof SpeechSynthesisUtterance !== 'undefined';
+            const giveUp = () => { if (token === currentSpeakToken) setAudioTip(true); };
+
+            const run = () => {
+                if (token !== currentSpeakToken) return;
+                const voice = hasSynth ? findHebrewVoice() : null;
+                if (voice) {
+                    // 有希伯來語語音：原生語音 → 線上語音 → 提示
+                    speakNative(voice, text, token, () => playOnline(text, token, giveUp));
+                } else if (hasSynth) {
+                    // 清單中找不到：線上語音 → 原生（僅指定 he-IL）→ 提示
+                    playOnline(text, token, () => speakNative(null, text, token, giveUp));
+                } else {
+                    playOnline(text, token, giveUp);
+                }
+            };
+
+            if (hasSynth) ensureVoices(run); else run();
         }
 
         initApp();
