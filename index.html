@@ -376,7 +376,7 @@
                             <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                         </svg>
                     </button>
-                    <span class="audio-tip">（因音源來自線上，當前僅支持在Chrome上播放）</span>
+                    <span class="audio-tip">（已支持手機 Chrome & 跨平台多重語音引擎）</span>
                 </div>
                 <span style="font-size:0.75rem; color:var(--text-muted); position:absolute; bottom:12px; font-weight:500;">(點擊空白區域翻面)</span>
             </div>
@@ -392,7 +392,7 @@
                             <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                         </svg>
                     </button>
-                    <span class="audio-tip">（因音源來自線上，當前僅支持在Chrome上播放）</span>
+                    <span class="audio-tip">（已支持手機 Chrome & 跨平台多重語音引擎）</span>
                 </div>
             </div>
         </div>
@@ -888,22 +888,36 @@
         let reviewOnly = false;
         let markedWords = JSON.parse(localStorage.getItem('hebrew_marked_words') || '[]');
 
+        // 初始化 AudioContext 以支援手機 Chrome 解鎖音訊通道
+        let audioCtx = null;
+        function unlockAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    audioCtx = new AudioContext();
+                }
+            }
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+
+            const player = document.getElementById('ttsAudioPlayer');
+            if (player) {
+                player.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+                player.play().catch(() => {});
+            }
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.getVoices();
+            }
+        }
+
         function initApp() {
             renderChapterButtons();
             filterData();
 
             document.addEventListener('click', unlockAudio, { once: true });
             document.addEventListener('touchstart', unlockAudio, { once: true });
-        }
-
-        function unlockAudio() {
-            const player = document.getElementById('ttsAudioPlayer');
-            player.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
-            player.play().catch(() => {});
-
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.getVoices();
-            }
         }
 
         function renderChapterButtons() {
@@ -1095,12 +1109,16 @@
             }
         }
 
+        // 升級版希伯來文點讀發音函數 (相容手機 Chrome 及多重備援機制)
         function speakCurrentWord(event) {
             if (event) event.stopPropagation();
             if (activeList.length === 0) return;
 
+            unlockAudio(); // 解鎖手機音訊
+
             const rawText = activeList[currentIndex].h;
-            const cleanText = rawText.replace(/[\u0591-\u05C7]/g, "").split('/')[0].trim();
+            // 清理朗讀文字，移除 Unicode 重音/特殊記號，取第一個主字
+            const cleanText = rawText.replace(/[\u0591-\u05AF\u05C1-\u05C7]/g, "").split('/')[0].trim();
 
             playWordAudio(cleanText);
         }
@@ -1109,14 +1127,21 @@
             const player = document.getElementById('ttsAudioPlayer');
             const encodedText = encodeURIComponent(text);
             
-            const audioUrl = `https://dict.youdao.com/dictvoice?audio=${encodedText}&le=he`;
-            
-            player.src = audioUrl;
+            // 優先使用線上發音 API
+            const primaryUrl = `https://dict.youdao.com/dictvoice?audio=${encodedText}&le=he`;
+            const fallbackUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=he&client=tw-ob`;
+
+            player.src = primaryUrl;
             
             const playPromise = player.play();
             if (playPromise !== undefined) {
-                playPromise.catch(error => {
-                    speakWebSpeech(text);
+                playPromise.catch(() => {
+                    // 若主要 API 失敗，嘗試 Google TTS 備援
+                    player.src = fallbackUrl;
+                    player.play().catch(() => {
+                        // 若線上 API 皆無法發音，轉用系統原生 Web Speech API
+                        speakWebSpeech(text);
+                    });
                 });
             }
         }
