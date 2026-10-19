@@ -346,6 +346,16 @@
         .mode-tabs { display: flex; gap: 4px; width: 100%; max-width: 500px; background: #e2e8f0; padding: 4px; border-radius: 14px; margin-bottom: 14px; }
         .mode-tab { flex: 1; border: none; background: transparent; padding: 10px 8px; font-size: 0.95rem; font-weight: 700; color: var(--text-muted); border-radius: 11px; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
         .mode-tab.active { background: #ffffff; color: var(--accent); box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12); }
+
+        /* ===== 章節分組（可展開／收合） ===== */
+        .chapter-select-group.grouped { flex-direction: column; align-items: stretch; gap: 8px; }
+        .ch-group { width: 100%; }
+        .ch-group-head { display: flex; align-items: center; gap: 8px; width: 100%; padding: 9px 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 0.88rem; font-weight: 700; color: var(--primary); cursor: pointer; text-align: left; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        .ch-group-head.has-sel { border-color: var(--accent); background: #eff6ff; }
+        .ch-group-sum { margin-left: auto; font-size: 0.75rem; font-weight: 600; color: var(--accent); }
+        .ch-group-arrow { font-size: 0.8rem; font-weight: 700; color: var(--accent); white-space: nowrap; }
+        .ch-group-body { display: none; flex-wrap: wrap; gap: 8px; padding-top: 8px; }
+        .ch-group.open .ch-group-body { display: flex; }
     </style>
 </head>
 <body>
@@ -375,7 +385,7 @@
             </div>
         </div>
         
-        <div class="chapter-select-group" id="chapterGroup"></div>
+        <div class="chapter-select-group grouped" id="chapterGroup"></div>
 
         <div class="toolbar">
             <button class="tool-btn" id="reviewOnlyBtn" onclick="toggleReviewOnly()">⭐ 僅看標記單字</button>
@@ -1040,15 +1050,63 @@
             document.addEventListener('touchstart', unlockAudio, { once: true });
         }
 
+        // 章節分組：展開後除非手動收合，否則保持展開（狀態會記住）
+        const chapterGroups = [
+            { key: 'g1', label: '第 3–18 章', chapters: chapterList.filter(c => c <= 18) },
+            { key: 'g2', label: '第 19–35 章', chapters: chapterList.filter(c => c >= 19) }
+        ];
+        let openGroups = { g1: false, g2: false };
+        try {
+            const saved = JSON.parse(localStorage.getItem('hebrew_ch_groups_open') || '{}');
+            openGroups = { g1: !!saved.g1, g2: !!saved.g2 };
+        } catch (e) {}
+
+        function toggleChapterGroup(key) {
+            openGroups[key] = !openGroups[key];
+            try { localStorage.setItem('hebrew_ch_groups_open', JSON.stringify(openGroups)); } catch (e) {}
+            renderChapterButtons();
+        }
+
         function renderChapterButtons() {
             const container = document.getElementById('chapterGroup');
             container.innerHTML = '';
-            chapterList.forEach(c => {
-                const btn = document.createElement('button');
-                btn.className = `ch-btn ${selectedChapters.includes(c) ? 'selected' : ''}`;
-                btn.innerText = `第${c}章`;
-                btn.onclick = () => selectChapter(c);
-                container.appendChild(btn);
+            chapterGroups.forEach(g => {
+                if (g.chapters.length === 0) return;
+                const sel = g.chapters.filter(c => selectedChapters.includes(c));
+
+                const wrap = document.createElement('div');
+                wrap.className = 'ch-group' + (openGroups[g.key] ? ' open' : '');
+
+                const head = document.createElement('button');
+                head.className = 'ch-group-head' + (sel.length ? ' has-sel' : '');
+                head.setAttribute('aria-expanded', openGroups[g.key] ? 'true' : 'false');
+                head.onclick = () => toggleChapterGroup(g.key);
+
+                const title = document.createElement('span');
+                title.textContent = g.label;
+                const sum = document.createElement('span');
+                sum.className = 'ch-group-sum';
+                sum.textContent = sel.length === 0 ? '' : (sel.length === 1 ? `已選：第 ${sel[0]} 章` : `已選 ${sel.length} 章`);
+                const arrow = document.createElement('span');
+                arrow.className = 'ch-group-arrow';
+                arrow.textContent = openGroups[g.key] ? '收合 ▲' : '展開 ▼';
+                head.appendChild(title);
+                head.appendChild(sum);
+                head.appendChild(arrow);
+
+                const body = document.createElement('div');
+                body.className = 'ch-group-body';
+                g.chapters.forEach(c => {
+                    const btn = document.createElement('button');
+                    btn.className = `ch-btn ${selectedChapters.includes(c) ? 'selected' : ''}`;
+                    btn.textContent = `第${c}章`;
+                    btn.onclick = () => selectChapter(c);
+                    body.appendChild(btn);
+                });
+
+                wrap.appendChild(head);
+                wrap.appendChild(body);
+                container.appendChild(wrap);
             });
         }
 
