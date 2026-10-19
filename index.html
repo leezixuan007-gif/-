@@ -321,6 +321,31 @@
             border: none; 
             box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
         }
+
+        /* ===== 單字列表 ===== */
+        #listView { width: 100%; max-width: 500px; display: none; flex-direction: column; gap: 14px; margin-bottom: 24px; }
+        .list-chapter { background: var(--card-bg); border-radius: 16px; box-shadow: var(--shadow); padding: 14px 14px 8px; }
+        .list-ch-title { display: flex; justify-content: space-between; align-items: baseline; font-weight: 800; color: var(--primary); font-size: 1.05rem; margin-bottom: 4px; }
+        .list-ch-title span { font-size: 0.78rem; color: var(--text-muted); font-weight: 600; }
+        .list-sub { font-size: 0.8rem; font-weight: 700; color: #92400e; background: var(--gold-light); border-radius: 8px; padding: 4px 10px; margin: 10px 0 2px; }
+        .list-row { display: grid; grid-template-columns: 30px 20px minmax(84px, 34%) 1fr 36px; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid #f1f5f9; cursor: default; }
+        .list-row:first-of-type { border-top: none; }
+        .list-star { background: none; border: none; font-size: 1.15rem; color: #cbd5e1; cursor: pointer; padding: 0; line-height: 1; -webkit-tap-highlight-color: transparent; }
+        .list-star.on { color: var(--gold); }
+        .list-no { font-size: 0.72rem; color: #94a3b8; font-weight: 600; text-align: center; }
+        .list-heb { font-family: 'Ezra SIL', 'SBL Hebrew', 'Taamey Frank CL', 'Times New Roman', serif; font-size: 1.65rem; direction: rtl; text-align: right; line-height: 1.35; color: #0f172a; }
+        .list-mean { font-size: 0.95rem; font-weight: 600; color: var(--text-dark); line-height: 1.35; }
+        .list-pos { font-size: 0.72rem; color: var(--text-muted); margin-top: 1px; }
+        .list-row .audio-btn { width: 32px; height: 32px; }
+        .list-row .audio-btn svg { width: 16px; height: 16px; }
+        .list-empty { text-align: center; color: var(--text-muted); padding: 24px 0; font-weight: 600; }
+        .mask-meaning .list-row:not(.revealed) .list-info { visibility: hidden; }
+        .mask-meaning .list-row { cursor: pointer; }
+
+        /* ===== 學習 / 背誦 模式切換 ===== */
+        .mode-tabs { display: flex; gap: 4px; width: 100%; max-width: 500px; background: #e2e8f0; padding: 4px; border-radius: 14px; margin-bottom: 14px; }
+        .mode-tab { flex: 1; border: none; background: transparent; padding: 10px 8px; font-size: 0.95rem; font-weight: 700; color: var(--text-muted); border-radius: 11px; cursor: pointer; transition: all 0.2s; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        .mode-tab.active { background: #ffffff; color: var(--accent); box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12); }
     </style>
 </head>
 <body>
@@ -329,6 +354,11 @@
         <h1>聖經希伯來文初階</h1>
         <p class="subtitle">互動式單字卡與發音朗讀</p>
     </header>
+
+    <div class="mode-tabs" id="modeTabs">
+        <button class="mode-tab" id="tabStudy" onclick="setViewMode('list')">📖 學習模式</button>
+        <button class="mode-tab" id="tabRecite" onclick="setViewMode('card')">🧠 背誦模式</button>
+    </div>
 
     <div class="controls-panel">
         <div class="chapter-header">
@@ -349,9 +379,13 @@
 
         <div class="toolbar">
             <button class="tool-btn" id="reviewOnlyBtn" onclick="toggleReviewOnly()">⭐ 僅看標記單字</button>
-            <button class="tool-btn" onclick="shuffleCurrentList()">🎲 隨機打亂</button>
+            <button class="tool-btn" id="shuffleBtn" onclick="shuffleCurrentList()">🎲 隨機打亂</button>
 
-            <label class="mode-toggle" style="background:#fef3c7; color:#92400e;">
+            <label class="mode-toggle" id="maskLabel" style="display:none; background:#ecfdf5; color:#047857;">
+                <input type="checkbox" id="maskToggle" onchange="toggleMask(this.checked)"> 🙈 遮住字義（點該列顯示）
+            </label>
+
+            <label class="mode-toggle" id="autoPlayLabel" style="background:#fef3c7; color:#92400e;">
                 <input type="checkbox" id="autoPlayToggle" onchange="toggleAutoPlay(this.checked)"> 🔊 自動朗讀
             </label>
 
@@ -377,7 +411,7 @@
                             <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                         </svg>
                     </button>
-                    <span class="audio-tip">（發音需裝置支援希伯來語語音，建議使用 Chrome / Safari）</span>
+                    <span class="audio-tip"></span>
                 </div>
                 <span style="font-size:0.75rem; color:var(--text-muted); position:absolute; bottom:12px; font-weight:500;">(點擊空白區域翻面)</span>
             </div>
@@ -393,7 +427,7 @@
                             <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
                         </svg>
                     </button>
-                    <span class="audio-tip">（發音需裝置支援希伯來語語音，建議使用 Chrome / Safari）</span>
+                    <span class="audio-tip"></span>
                 </div>
             </div>
         </div>
@@ -404,6 +438,8 @@
         <button class="btn btn-mark" id="markBtn" onclick="toggleCurrentMark()">☆ 標記</button>
         <button class="btn btn-next" onclick="nextCard()">下一張</button>
     </div>
+
+    <div id="listView"></div>
 
     <audio id="ttsAudioPlayer" style="display:none;"></audio>
 
@@ -444,21 +480,30 @@
             // ====== 第 4 章 ======
             { ch: 4, h: "אֲדֹנָי / אָדוֹן", m: "上主；（אָדוֹן）主、主人", pos: "陽性名詞" },
             { ch: 4, h: "אָח", m: "兄弟", pos: "陽性名詞" },
+            { ch: 4, h: "אַחִים", m: "兄弟（אָח 的不規則複數）", pos: "不規則複數", x: 1 },
             { ch: 4, h: "אִישׁ", m: "男人、丈夫", pos: "陽性名詞" },
+            { ch: 4, h: "אֲנָשִׁים", m: "男人們（אִישׁ 的不規則複數）", pos: "不規則複數", x: 1 },
             { ch: 4, h: "אִשָּׁה", m: "女人、妻子", pos: "陰性名詞" },
+            { ch: 4, h: "נָשִׁים", m: "女人們、妻子們（אִשָּׁה 的不規則複數）", pos: "不規則複數", x: 1 },
             { ch: 4, h: "בַּת", m: "女兒", pos: "陰性名詞" },
+            { ch: 4, h: "בָּנוֹת", m: "女兒們（בַּת 的不規則複數）", pos: "不規則複數", x: 1 },
             { ch: 4, h: "גּוֹי", m: "人民、國家", pos: "陽性名詞" },
             { ch: 4, h: "דֶּ֫רֶךְ", m: "道路、路徑", pos: "陽/陰性名詞" },
             { ch: 4, h: "הַר", m: "山、山脈", pos: "陽性名詞" },
+            { ch: 4, h: "הָרִים", m: "山（הַר 的複數）", pos: "複數", x: 1 },
             { ch: 4, h: "כֹּהֵן", m: "祭司", pos: "陽性名詞" },
-            { ch: 4, h: "לֵב / לֵבָב", m: "心", pos: "陽性名詞" },
+            { ch: 4, h: "לֵב", m: "心", pos: "陽性名詞" },
+            { ch: 4, h: "לֵבָב", m: "心（לֵב 的交替形式）", pos: "交替形式", x: 1 },
             { ch: 4, h: "מַ֫יִם", m: "水", pos: "陽性複數名詞" },
             { ch: 4, h: "נֶ֫פֶשׁ", m: "生命、靈魂、脖子、喉嚨", pos: "陰性名詞" },
             { ch: 4, h: "נָבִיא", m: "先知", pos: "陽性名詞" },
             { ch: 4, h: "סֵ֫פֶר", m: "書、書卷", pos: "陽性名詞" },
             { ch: 4, h: "עַ֫יִן", m: "眼睛、泉源", pos: "陰性名詞" },
+            { ch: 4, h: "עֵינַ֫יִם", m: "眼睛（עַ֫יִן 的雙數）", pos: "雙數", x: 1 },
             { ch: 4, h: "עִיר", m: "城市", pos: "陰性名詞" },
+            { ch: 4, h: "עָרִים", m: "城市（עִיר 的不規則複數）", pos: "不規則複數", x: 1 },
             { ch: 4, h: "צָבָא", m: "軍隊、部隊、戰爭", pos: "陽性名詞" },
+            { ch: 4, h: "צְבָאוֹת", m: "軍隊、部隊（צָבָא 的複數）", pos: "複數", x: 1 },
             { ch: 4, h: "קוֹל", m: "聲音、聲響", pos: "陽性名詞" },
             { ch: 4, h: "רֹאשׁ", m: "頭、首領、頂部", pos: "陽性名詞" },
             { ch: 4, h: "תּוֹרָה", m: "法律、訓誨、妥拉", pos: "陰性名詞" },
@@ -468,7 +513,8 @@
             { ch: 5, h: "וְ", m: "和、但、也、甚至", pos: "連接詞" },
             { ch: 5, h: "זָהָב", m: "金", pos: "陽性名詞" },
             { ch: 5, h: "חֶ֫רֶב", m: "劍", pos: "陰性名詞" },
-            { ch: 5, h: "חַי / חַיִּים", m: "（名詞 חַיִּים）生命、終身；（形容詞）活的", pos: "名詞 / 形容詞" },
+            { ch: 5, h: "חַי", m: "（形容詞）活的", pos: "形容詞" },
+            { ch: 5, h: "חַיִּים", m: "生命、終身（名詞）", pos: "名詞形式（複數形）", x: 1 },
             { ch: 5, h: "יֶ֫לֶד", m: "男童、男孩", pos: "陽性名詞" },
             { ch: 5, h: "יָם", m: "海、西", pos: "陽性名詞" },
             { ch: 5, h: "כֶּ֫סֶף", m: "銀", pos: "陽性名詞" },
@@ -500,6 +546,7 @@
             { ch: 6, h: "מִן / מִן-", m: "從", pos: "介系詞" },
             { ch: 6, h: "מַ֫עַל / מִמַּ֫עַל", m: "在……以上（通常與 מִן 連用）", pos: "介系詞 / 副詞" },
             { ch: 6, h: "מִצְוָה", m: "命令、誡命", pos: "陰性名詞" },
+            { ch: 6, h: "מִצְוֹת", m: "命令、誡命（מִצְוָה 的不規則複數）", pos: "不規則複數", x: 1 },
             { ch: 6, h: "עַד", m: "直到、當……的時候", pos: "介系詞" },
             { ch: 6, h: "עַל", m: "上面、在……之上、因為、按照", pos: "介系詞" },
             { ch: 6, h: "עַל-דְּבַר", m: "因為、為了", pos: "介系詞短語" },
@@ -544,7 +591,8 @@
             { ch: 8, h: "טָהוֹר", m: "乾淨、純潔", pos: "形容詞" },
             { ch: 8, h: "כִּי / כִּי-אִם", m: "因為、為了；（反義）但是，除了；（強調）確實地；כִּי־אִם 但是，除了、只有", pos: "連接詞" },
             { ch: 8, h: "כְּסִיל", m: "愚笨、遲鈍", pos: "形容詞 / 名詞" },
-            { ch: 8, h: "לָ֫מָה / מָה", m: "為什麼？；מָה 什麼？如何？", pos: "疑問代名詞 / 副詞" },
+            { ch: 8, h: "לָ֫מָּה / לָמָה", m: "為什麼？", pos: "疑問副詞" },
+            { ch: 8, h: "מָה", m: "什麼？如何？", pos: "疑問代名詞" },
             { ch: 8, h: "מַדּוּעַ", m: "為何？為什麼？", pos: "疑問副詞" },
             { ch: 8, h: "מִי", m: "誰？", pos: "疑問代名詞" },
             { ch: 8, h: "עָנִי", m: "貧窮、受苦", pos: "形容詞" },
@@ -552,8 +600,10 @@
             { ch: 8, h: "שֹׁפֵט", m: "審判官", pos: "陽性名詞" },
             // ====== 第 9 章 ======
             { ch: 9, h: "אוֹ", m: "或", pos: "連接詞" },
-            { ch: 9, h: "אַ֫יִן / אֵין", m: "無、沒有；亦作 אֵין（組合形）", pos: "質詞" },
+            { ch: 9, h: "אַ֫יִן", m: "無、沒有", pos: "質詞" },
+            { ch: 9, h: "אֵין", m: "無、沒有（אַ֫יִן 的組合形）", pos: "組合形", x: 1 },
             { ch: 9, h: "אַף", m: "鼻孔、鼻子、忿怒；אַפַּ֫יִם（雙數）", pos: "陽性名詞" },
+            { ch: 9, h: "אַפַּ֫יִם", m: "鼻孔、鼻子、忿怒（אַף 的雙數）", pos: "雙數", x: 1 },
             { ch: 9, h: "בֹּ֫קֶר", m: "早晨", pos: "陽性名詞" },
             { ch: 9, h: "בָּקָר", m: "牛、牲畜、家畜", pos: "陽性名詞" },
             { ch: 9, h: "בְּרָכָה", m: "祝福、禮物", pos: "陰性名詞" },
@@ -579,13 +629,16 @@
             { ch: 10, h: "חֶ֫סֶד", m: "信實、慈愛、獻身、忠貞的愛", pos: "陽性名詞" },
             { ch: 10, h: "חֹ֫דֶשׁ", m: "新月、月份", pos: "陽性名詞" },
             { ch: 10, h: "יָד", m: "手；（暗喻）邊、力量；יָדוֹת（複數）", pos: "陰性名詞" },
+            { ch: 10, h: "יָדוֹת", m: "手（יָד 的複數）", pos: "複數", x: 1 },
             { ch: 10, h: "מָ֫וֶת", m: "死亡；מוֹת（不規則的附屬形）", pos: "陽性名詞" },
+            { ch: 10, h: "מוֹת", m: "死亡（מָ֫וֶת 的不規則附屬形）", pos: "附屬形", x: 1 },
             { ch: 10, h: "מַטֶּה", m: "棍、杖、支派", pos: "陽性名詞" },
             { ch: 10, h: "מִדְבָּר", m: "牧場、曠野", pos: "陽性名詞" },
             { ch: 10, h: "עוֹד", m: "還、仍舊、再", pos: "副詞/質詞" },
             { ch: 10, h: "עֵת", m: "時間", pos: "陰性名詞" },
             { ch: 10, h: "עֹלָה", m: "燔祭", pos: "陰性名詞" },
             { ch: 10, h: "פָּנִים", m: "臉；פְּנֵי（附屬形）", pos: "陽/陰性複數名詞" },
+            { ch: 10, h: "פְּנֵי", m: "臉（פָּנִים 的附屬形）", pos: "附屬形", x: 1 },
             { ch: 10, h: "צֹאן", m: "羊群、小群的綿羊與或山羊", pos: "陰性名詞" },
             { ch: 10, h: "רֶ֫גֶל", m: "腳", pos: "陰性名詞" },
             // ====== 第 11 章 ======
@@ -760,7 +813,8 @@
             { ch: 21, h: "שָׂנֵא", m: "憎恨", pos: "III-א 狀態動詞 (Qal)" },
             { ch: 21, h: "שָׁאַר", m: "留下、存活", pos: "動詞 (Qal)" },
             { ch: 21, h: "בָּמָה", m: "高處、山陵邱壇", pos: "陰性名詞" },
-            { ch: 21, h: "חֻקָּה / חֻקּוֹת", m: "律例、命令；複數形 חֻקּוֹת", pos: "陰性名詞" },
+            { ch: 21, h: "חֻקָּה", m: "律例、命令", pos: "陰性名詞" },
+            { ch: 21, h: "חֻקּוֹת", m: "律例、命令（חֻקָּה 的複數）", pos: "複數", x: 1 },
             { ch: 21, h: "יָמִין", m: "右、南方", pos: "陰性名詞" },
             { ch: 21, h: "מִשְׁכָּן", m: "居所、帳幕", pos: "陽性名詞" },
             { ch: 21, h: "נַ֫חַל", m: "河流、溪流", pos: "陽性名詞" },
@@ -803,7 +857,7 @@
             { ch: 24, h: "לָחַם", m: "（Niphal）爭鬥", pos: "動詞 (Niphal)" },
             { ch: 24, h: "מָלַט", m: "（Niphal）逃脫", pos: "動詞 (Niphal/Piel)" },
             { ch: 24, h: "נָחַם", m: "（Niphal）抱歉、悔改、有憐憫", pos: "動詞 (Niphal/Piel)" },
-            { ch: 24, h: "נָכָה", m: "（Niphal）被擊打", pos: "動詞 (Hiphil)" },
+            { ch: 24, h: "נָכָה", m: "（Niphal）被擊打", pos: "動詞 (Niphal)" },
             { ch: 24, h: "נָצַב", m: "（Niphal）站崗、被安置", pos: "動詞 (Niphal/Hiphil)" },
             { ch: 24, h: "נָצַל", m: "（Niphal）被拯救", pos: "動詞 (Niphal/Hiphil)" },
             { ch: 24, h: "סָתַר", m: "（Niphal）隱藏、躲藏自己", pos: "動詞 (Niphal/Hiphil)" },
@@ -948,6 +1002,7 @@
         let currentIndex = 0;
         let isFlipped = false;
         let reviewOnly = false;
+        let viewMode = 'card';
         let markedWords = JSON.parse(localStorage.getItem('hebrew_marked_words') || '[]');
 
         // 初始化 AudioContext 以支援手機 Chrome 解鎖音訊通道
@@ -977,6 +1032,9 @@
         function initApp() {
             renderChapterButtons();
             filterData();
+            let savedMode = 'list';
+            try { savedMode = localStorage.getItem('hebrew_view_mode') || 'list'; } catch (e) {}
+            setViewMode(savedMode);
 
             document.addEventListener('click', unlockAudio, { once: true });
             document.addEventListener('touchstart', unlockAudio, { once: true });
@@ -1006,7 +1064,7 @@
 
         function toggleAutoPlay(enabled) {
             isAutoPlay = enabled;
-            if (isAutoPlay) {
+            if (isAutoPlay && viewMode !== 'list') {
                 speakCurrentWord();
             }
         }
@@ -1047,6 +1105,7 @@
             currentIndex = 0;
             updateScopeText();
             showCard();
+            if (viewMode === 'list') renderList();
         }
 
         function updateScopeText() {
@@ -1185,8 +1244,145 @@
             playWordAudio(cleanText);
         }
 
+
+        // ===== 單字列表 / 不規則形式 =====
+        // 切換「學習模式（列表）」與「背誦模式（單字卡）」
+        function setViewMode(mode) {
+            viewMode = (mode === 'card') ? 'card' : 'list';
+            const isList = viewMode === 'list';
+            try { localStorage.setItem('hebrew_view_mode', viewMode); } catch (e) {}
+            document.getElementById('tabStudy').classList.toggle('active', isList);
+            document.getElementById('tabRecite').classList.toggle('active', !isList);
+            document.getElementById('listView').style.display = isList ? 'flex' : 'none';
+            document.getElementById('cardContainer').style.display = isList ? 'none' : '';
+            ['.status-info', '.progress-bar', '.action-btns'].forEach(sel => {
+                const el = document.querySelector(sel);
+                if (el) el.style.display = isList ? 'none' : '';
+            });
+            document.getElementById('shuffleBtn').style.display = isList ? 'none' : '';
+            document.getElementById('autoPlayLabel').style.display = isList ? 'none' : '';
+            document.getElementById('maskLabel').style.display = isList ? '' : 'none';
+            if (isList) {
+                renderList();
+            } else {
+                showCard();
+            }
+        }
+
+        function toggleMask(on) {
+            document.getElementById('listView').classList.toggle('mask-meaning', on);
+            document.querySelectorAll('#listView .list-row.revealed').forEach(r => r.classList.remove('revealed'));
+        }
+
+        function speakText(rawText) {
+            unlockAudio();
+            const cleanText = rawText.replace(/[\u0591-\u05AF\u05C1-\u05C7]/g, "").split('/')[0].trim();
+            playWordAudio(cleanText);
+        }
+
+        function toggleMarkByWord(h) {
+            const idx = markedWords.indexOf(h);
+            if (idx > -1) {
+                markedWords.splice(idx, 1);
+            } else {
+                markedWords.push(h);
+            }
+            localStorage.setItem('hebrew_marked_words', JSON.stringify(markedWords));
+            if (reviewOnly) {
+                filterData();
+            } else {
+                renderList();
+            }
+        }
+
+        function makeListRow(item, no) {
+            const row = document.createElement('div');
+            row.className = 'list-row';
+            row.onclick = () => { row.classList.toggle('revealed'); };
+
+            const star = document.createElement('button');
+            star.className = 'list-star' + (markedWords.includes(item.h) ? ' on' : '');
+            star.textContent = markedWords.includes(item.h) ? '★' : '☆';
+            star.title = '標記';
+            star.onclick = (e) => { e.stopPropagation(); toggleMarkByWord(item.h); };
+
+            const num = document.createElement('div');
+            num.className = 'list-no';
+            num.textContent = no;
+
+            const heb = document.createElement('div');
+            heb.className = 'list-heb';
+            heb.textContent = item.h;
+
+            const info = document.createElement('div');
+            info.className = 'list-info';
+            const mean = document.createElement('div');
+            mean.className = 'list-mean';
+            mean.textContent = item.m;
+            const pos = document.createElement('div');
+            pos.className = 'list-pos';
+            pos.textContent = item.pos || '';
+            info.appendChild(mean);
+            info.appendChild(pos);
+
+            const btn = document.createElement('button');
+            btn.className = 'audio-btn';
+            btn.title = '點擊發音';
+            btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>';
+            btn.onclick = (e) => { e.stopPropagation(); speakText(item.h); };
+
+            row.appendChild(star);
+            row.appendChild(num);
+            row.appendChild(heb);
+            row.appendChild(info);
+            row.appendChild(btn);
+            return row;
+        }
+
+        function renderList() {
+            const box = document.getElementById('listView');
+            box.innerHTML = '';
+            let shown = 0;
+
+            chapterList.filter(c => selectedChapters.includes(c)).forEach(ch => {
+                let items = allVocabData.filter(it => it.ch === ch);
+                if (reviewOnly) items = items.filter(it => markedWords.includes(it.h));
+                const base = items.filter(it => !it.x);
+                const irr = items.filter(it => it.x);
+                if (base.length + irr.length === 0) return;
+
+                const sec = document.createElement('div');
+                sec.className = 'list-chapter';
+                const title = document.createElement('div');
+                title.className = 'list-ch-title';
+                title.innerHTML = '<div></div><span></span>';
+                title.firstChild.textContent = `第 ${ch} 章`;
+                title.lastChild.textContent = `共 ${base.length + irr.length} 字`;
+                sec.appendChild(title);
+
+                base.forEach((it, i) => sec.appendChild(makeListRow(it, i + 1)));
+
+                if (irr.length) {
+                    const sub = document.createElement('div');
+                    sub.className = 'list-sub';
+                    sub.textContent = '不規則形式（複數、雙數、附屬形等；背誦模式會單獨出題）';
+                    sec.appendChild(sub);
+                    irr.forEach((it, i) => sec.appendChild(makeListRow(it, '·')));
+                }
+                box.appendChild(sec);
+                shown += base.length + irr.length;
+            });
+
+            if (shown === 0) {
+                const empty = document.createElement('div');
+                empty.className = 'list-empty';
+                empty.textContent = '無資料，請勾選章節或標記單字';
+                box.appendChild(empty);
+            }
+        }
+
         // ===== 發音：優先使用裝置內建希伯來語語音，失敗再用線上語音備援 =====
-        const AUDIO_TIP_DEFAULT = '（發音需裝置支援希伯來語語音，建議使用 Chrome / Safari）';
+        const AUDIO_TIP_DEFAULT = '';
         const AUDIO_TIP_FAIL = '⚠️ 此瀏覽器/裝置暫無法發音，請改用 Chrome 或 Safari，或於系統安裝希伯來語語音';
         let currentSpeakToken = 0;
 
