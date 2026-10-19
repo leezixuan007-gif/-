@@ -356,6 +356,16 @@
         .ch-group-arrow { font-size: 0.8rem; font-weight: 700; color: var(--accent); white-space: nowrap; }
         .ch-group-body { display: none; flex-wrap: wrap; gap: 8px; padding-top: 8px; }
         .ch-group.open .ch-group-body { display: flex; }
+
+        /* 工具列：避免手機上文字換行 */
+        .tool-btn, .toolbar .mode-toggle { white-space: nowrap; }
+        .ch-all-btn { border-style: dashed; color: var(--accent); font-weight: 700; }
+        .ch-all-btn.selected { color: #fff; }
+        @media (max-width: 440px) {
+            .toolbar { gap: 6px; }
+            .tool-btn { padding: 7px 9px; font-size: 0.8rem; gap: 4px; }
+            .toolbar .mode-toggle { font-size: 0.8rem; padding: 4px 8px; gap: 4px; }
+        }
     </style>
 </head>
 <body>
@@ -378,8 +388,6 @@
                     <input type="checkbox" id="multiSelectToggle" onchange="toggleMultiSelectMode(this.checked)"> 多選章節
                 </label>
                 <div id="batchControl" style="display:none;">
-                    <button class="batch-btn" onclick="selectAllChapters(true)">全選</button>
-                    <span style="color:#ccc;">|</span>
                     <button class="batch-btn" onclick="selectAllChapters(false)">清空</button>
                 </div>
             </div>
@@ -392,7 +400,7 @@
             <button class="tool-btn" id="shuffleBtn" onclick="shuffleCurrentList()">🎲 隨機打亂</button>
 
             <label class="mode-toggle" id="maskLabel" style="display:none; background:#ecfdf5; color:#047857;">
-                <input type="checkbox" id="maskToggle" onchange="toggleMask(this.checked)"> 🙈 遮住字義（點該列顯示）
+                <input type="checkbox" id="maskToggle" onchange="toggleMask(this.checked)"> 🙈 遮住字義
             </label>
 
             <label class="mode-toggle" id="autoPlayLabel" style="background:#fef3c7; color:#92400e;">
@@ -449,6 +457,7 @@
         <button class="btn btn-next" onclick="nextCard()">下一張</button>
     </div>
 
+    <div id="maskHint" style="display:none; font-size:0.75rem; color:var(--text-muted); font-weight:600; margin-bottom:8px;">點任一列即可顯示／隱藏字義</div>
     <div id="listView"></div>
 
     <audio id="ttsAudioPlayer" style="display:none;"></audio>
@@ -1061,6 +1070,21 @@
             openGroups = { g1: !!saved.g1, g2: !!saved.g2 };
         } catch (e) {}
 
+        // 「全選本區」只選取該區的章節（3–18 或 19–35），不會兩區同時全選
+        function selectGroupAll(key) {
+            const g = chapterGroups.find(x => x.key === key);
+            if (!g) return;
+            if (!isMultiSelect) {
+                const cb = document.getElementById('multiSelectToggle');
+                if (cb) cb.checked = true;
+                isMultiSelect = true;
+                document.getElementById('batchControl').style.display = 'block';
+            }
+            selectedChapters = [...g.chapters];
+            renderChapterButtons();
+            filterData();
+        }
+
         function toggleChapterGroup(key) {
             openGroups[key] = !openGroups[key];
             try { localStorage.setItem('hebrew_ch_groups_open', JSON.stringify(openGroups)); } catch (e) {}
@@ -1096,6 +1120,12 @@
 
                 const body = document.createElement('div');
                 body.className = 'ch-group-body';
+                const allSel = g.chapters.every(c => selectedChapters.includes(c)) && selectedChapters.length === g.chapters.length;
+                const allBtn = document.createElement('button');
+                allBtn.className = 'ch-btn ch-all-btn' + (allSel ? ' selected' : '');
+                allBtn.textContent = '全選本區';
+                allBtn.onclick = () => selectGroupAll(g.key);
+                body.appendChild(allBtn);
                 g.chapters.forEach(c => {
                     const btn = document.createElement('button');
                     btn.className = `ch-btn ${selectedChapters.includes(c) ? 'selected' : ''}`;
@@ -1320,6 +1350,7 @@
             document.getElementById('shuffleBtn').style.display = isList ? 'none' : '';
             document.getElementById('autoPlayLabel').style.display = isList ? 'none' : '';
             document.getElementById('maskLabel').style.display = isList ? '' : 'none';
+            document.getElementById('maskHint').style.display = (isList && document.getElementById('maskToggle').checked) ? 'block' : 'none';
             if (isList) {
                 renderList();
             } else {
@@ -1329,6 +1360,7 @@
 
         function toggleMask(on) {
             document.getElementById('listView').classList.toggle('mask-meaning', on);
+            document.getElementById('maskHint').style.display = on ? 'block' : 'none';
             document.querySelectorAll('#listView .list-row.revealed').forEach(r => r.classList.remove('revealed'));
         }
 
