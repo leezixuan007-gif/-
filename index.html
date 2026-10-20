@@ -1250,7 +1250,17 @@
                 return;
             }
 
+            if (currentIndex >= activeList.length || currentIndex < 0) currentIndex = 0;
             const item = activeList[currentIndex];
+
+            // 若上一張停在中文面：先瞬間翻回正面（不播動畫），再換內容，避免閃過中文意思
+            const cardEl = document.getElementById('card');
+            if (cardEl.classList.contains('flipped')) {
+                cardEl.style.transition = 'none';
+                cardEl.classList.remove('flipped');
+                void cardEl.offsetWidth;
+                cardEl.style.transition = '';
+            }
             document.getElementById('cardCh').innerText = `Ch.${item.ch}`;
             document.getElementById('cardChBack').innerText = `Ch.${item.ch}`;
             document.getElementById('hebrewFront').innerText = item.h;
@@ -1270,7 +1280,7 @@
             const pct = ((currentIndex + 1) / activeList.length) * 100;
             document.getElementById('progressFill').style.width = pct + '%';
 
-            if (isAutoPlay) {
+            if (isAutoPlay && viewMode !== 'list') {
                 speakCurrentWord();
             }
         }
@@ -1310,12 +1320,13 @@
                 markedWords.push(item.h);
             }
             localStorage.setItem('hebrew_marked_words', JSON.stringify(markedWords));
-            
+
             if (reviewOnly) {
-                filterData();
-            } else {
-                showCard();
+                // 只看標記單字時：取消標記後，直接顯示下一個標記單字（不回到第一個）
+                activeList = activeList.filter(it => markedWords.includes(it.h));
+                if (currentIndex >= activeList.length) currentIndex = 0; // 已是最後一個才從頭循環
             }
+            showCard();
         }
 
         // 升級版希伯來文點讀發音函數 (相容手機 Chrome 及多重備援機制)
@@ -1379,10 +1390,10 @@
             }
             localStorage.setItem('hebrew_marked_words', JSON.stringify(markedWords));
             if (reviewOnly) {
-                filterData();
-            } else {
-                renderList();
+                activeList = activeList.filter(it => markedWords.includes(it.h));
+                if (currentIndex >= activeList.length) currentIndex = 0;
             }
+            renderList();
         }
 
         function makeListRow(item, no) {
